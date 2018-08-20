@@ -1,7 +1,7 @@
 # a3upddownmod
 # BASH Script for ArmA 3 MODs updating/downloading for Linux Servers 
 
-This script is a full interactive. The complete automatic start is planing but not incremented yet.
+This script is a full interactive. The complete automatic start is planing but not implemented yet.
 This script is able to update the separate (for now) MOD, download separate MOD and to check for updates of an all installed MODs.
 After downloading or updating the MOD this script will ask to make a symlink and to change MODs directory name and all files/directories names in it from upper to lower case.
 
