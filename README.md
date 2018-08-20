@@ -30,7 +30,7 @@ will take a look like
 ```
 protocol = 1;
 publishedid =773125288;
-ame = "@ACE Compat_RHS_USAF";
+name = "@ACE Compat_RHS_USAF";
 timestamp = 5248321387302862629;
 ```
 
