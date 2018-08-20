@@ -11,7 +11,7 @@ Just clone or download this script to the /home directory of a user which is run
 Run the script and follow instructions.
 ## Known issues:
 - Script can't correctly parse the last update date of a MOD from the Steam WorkShop if it was updated in the past Year or earley. (For exapmle, the current year is 2018, but the mod was updated the last time at 2016. So, this situation will generate a message like "date: invalid date ‘24 Aug, 2016 2018’")
-- _**NOT A BUG**_: Some MODs has no an application ID in it's **meta.cpp** file (it's = 0). These MODs can't be updated by this script before editing the **meta.cpp** file. To make it work (just for a one time, it will be broken after update and need to be edited again before the next update) just copy the MOD's Steam AppID from the MOD's WorkShop link and replace the "0" here
+- _**NOT A BUG**_: Some MODs has no an application ID in it's **meta.cpp** file (it's = 0). These MODs can't be updated by this script before editing the **meta.cpp** file. To make it work (just for a one time, it will be overwritten after update and need to be edited again before the next update) just copy the MOD's Steam AppID from the MOD's WorkShop link and replace the "0" here
 ```
 publishedid = 0;
 ```
