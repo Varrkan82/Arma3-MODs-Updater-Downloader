@@ -33,6 +33,7 @@ LICENSE
 3 - Wrong selection
 4 - Wrong MODs name
 5 - Can not creeate the symbolic link
+6 - Wrong MODs ID in "meta.cpp" file ("0" as usually)
 
 EXITCODES
 
@@ -52,6 +53,7 @@ STEAM_PASS=""										# Steam password
 # Check are Steam login and passwrod is setted
 if [[ -z "${STEAM_LOGIN}" ]]; then
     clear
+    echo -ne "If you planing just to check for updates for all installed MODs - you can past any character to login/password, Empty field will not accepted!\n"
     echo -ne "Steam login is undefined. Please, enter it now:\n"
     read -er STEAM_LOGIN
     if [[ -z "${STEAM_LOGIN}" ]]; then
@@ -148,25 +150,33 @@ case "${ACTION}" in
 		for MOD_NAME in "${INST_MODS_LIST[@]}"; do
 		    MODS_PATH="${INST_MODS_PATH}/${MOD_NAME}"
 		    MOD_ID=$(get_mod_id)
+		    MOD_ID="${MOD_ID%$'\r'}"
 		    URL="${STEAM_CHLOG_URL}/${MOD_ID}"
 		    URL="${URL%$'\r'}"
 		    WKSHP_UP_ST=$(${CURL_CMD} ${URL} | grep -m1 "Update:" | sed 's/\@/'${CURRYEAR}'/' | awk '{print $2" "$3" "$4" "$5}')	# Get the last update time of a MOD from WorkShop
 
 		    UTIME=$(date --date="${WKSHP_UP_ST}" +%s)
-		    CTIME=$(date --date="$(stat ${MODS_PATH} | grep Modify | cut -d" " -f2-)" +%s )	#Fix for MC #"
-		    # Compare update time
-		    if [[ ${UTIME} -gt ${CTIME} ]]; then
-			# Construct the list of MODs to update
-			TO_UP+="${MOD_NAME}"
+		    CTIME=$(date --date="$(stat ${MODS_PATH} | grep Modify | cut -d" " -f2-)" +%s )	#Fix for MC syntax hilighting #"
+
+		    if [[ "${MOD_ID}" = "0" ]]; then
+			echo -ne "Wrong ID for MOD ${MOD_NAME} in file meta.cpp\n"
 			continue
 		    else
-			echo -ne "MOD ${MOD_NAME} is already up to date!\n"
-			continue
+			# Compare update time
+			if [[ ${UTIME} -gt ${CTIME} ]]; then
+			    # Construct the list of MODs to update
+			    TO_UP+="${MOD_NAME} "
+			    echo -ne "Mod ${MOD_NAME} can be updated.\n"
+			    continue
+			else
+			    echo -ne "MOD ${MOD_NAME} is already up to date!\n"
+			    continue
+			fi
 		    fi
 		done
 		# Print MODs which could be updated
 		if [[ ! -z "${TO_UP[@]}" ]]; then
-		    echo "Mods "${TO_UP[@]}" can be updated. Please, proceed manually."
+		    echo "Mods ${TO_UP[*]} can be updated. Please, proceed manually."
 #		update_all
 		else
 		    exit 0
@@ -175,47 +185,61 @@ case "${ACTION}" in
 		# Update the single selected MOD
 		MODS_PATH="${INST_MODS_PATH}/${MOD_NAME}"
 		MOD_ID=$(get_mod_id)
+		MOD_ID="${MOD_ID%$'\r'}"
 		if [[ "${MOD_ID}" = "0" ]]; then
 		    echo -ne "MOD application ID is not configured for mod ${MOD_NAME} in file ${MODS_PATH}/meta.cpp \n"
 		    echo -ne "Find it by the MODs name in a Steam Workshop. Exiting."
+		    exit 6
 		fi
+
 		URL="${STEAM_CHLOG_URL}/${MOD_ID}"
 		URL="${URL%$'\r'}"
 		WKSHP_UP_ST=$(${CURL_CMD} ${URL}| grep -m1 "Update:" | sed 's/\@/'${CURRYEAR}'/' | awk '{print $2" "$3" "$4" "$5}')
 
 		UTIME=$(date --date="${WKSHP_UP_ST}" +%s)
-		CTIME=$(date --date="$(stat ${MODS_PATH} | grep Modify | cut -d" " -f2-)" +%s )		#Fix for MC #"
+		CTIME=$(date --date="$(stat ${MODS_PATH} | grep Modify | cut -d" " -f2-)" +%s )		#Fix for MC syntax hilighting #"
 		if [[ ${UTIME} -gt ${CTIME} ]]; then
-		    MOD_UP_CMD='+"workshop_download_item ${STMAPPID} ${MOD_ID}"'
+		    MOD_UP_CMD=+"workshop_download_item ${STMAPPID} ${MOD_ID}"
 		    echo "${MOD_UP_CMD}"
 		    if [[ -d "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" ]]; then
-			echo -ne "Wokshop target directory for MOD ${MOD_NAME} is already present. Moving it to ${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}_old \n"
+			echo -ne "Workshop target directory for MOD ${MOD_NAME} is already present. Moving it to ${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}_old \n"
 			mv -f "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}_old"
 		    fi
+
 		    update_mod
+
 		    if [[ "$?" = "0" ]]; then
 			echo -ne "MODs updateis successfully downloaded to ${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}\n"
-			mv -f "${MODS_PATH}" "${MODS_PATH}"_old
-			echo -ne "Old MODs directory is moved to ${MODS_PATH}_old\n Creating symlink for an updated MOD.\n"
-			ln -s "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" "${MODS_PATH}"
+
+			if [[ -d "${MODS_PATH}" ]]; then
+			    mv -f "${MODS_PATH}" "${MODS_PATH}"_old
+			    echo -ne "Old MODs directory is moved to ${MODS_PATH}_old\n Creating symlink for an updated MOD.\n"
+			    ln -s "${WKSHP_PATH}"/content/"${STMAPPID}"/"${MOD_ID}" "${MODS_PATH}"
+			elif [[ -L "${MODS_PATH}" ]]; then
+			    rm "${MODS_PATH}"
+			    echo "ln -s ${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID} ${INST_MODS_PATH}/${MOD_NAME}"
+			    ln -s "${WKSHP_PATH}"/content/"${STMAPPID}"/"${MOD_ID}" "${INST_MODS_PATH}"/"${MOD_NAME}"
+			fi
+
 			if [[ "$?" = "0" ]]; then
-			    echo -ne "MOD is updated.\n"
+			    echo -ne "MOD is updated. Simbolik link is created.\n"
 			else
 			    echo -ne "Warning! Can't create sumbolic link to a target MODs directory. Exit.\n"
 			    exit 5
 			fi
 			# Ask user to transform the names from upper to lower case
+			echo -ne "Do you want to transform all files and directories names from UPPER to LOWER case?\n"
 			read -r -n1 TRANSFORM
-			    case "${TRANSFORM}" in
-				y | Y )
-				    find "${MODS_PATH}" -depth -exec rename 's/(.*)\/([^\/]*)/$1\/\L$2/' {} \;
-				    exit 0
-				    ;;
-				* )
-				    echo -ne "Warning! You're selected to DO NOT transform the Upper case letters in a MOD's directory and file name. It could cause the probles in MOD includding to ArmA 3."
-				    exit 0
-				    ;;
-			    esac
+			case "${TRANSFORM}" in
+			    y | Y )
+				find "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" -depth -exec rename 's/(.*)\/([^\/]*)/$1\/\L$2/' {} \;
+				exit 0
+				;;
+			    * )
+				echo -ne "Warning! You're selected to DO NOT transform the Upper case letters in a MOD's directory and file name. It could cause the probles connecting the MOD to ArmA 3."
+				exit 0
+				;;
+			esac
 		    fi
 		else
 		    echo -ne "MOD ${MOD_NAME} is already up to date.\n"
@@ -240,19 +264,29 @@ case "${ACTION}" in
 
 	download_mod
 
-	echo -ne "Do you want to symlink the downloaded MOD to your MODs folder in ARMA3Server folder?\n"
+	if [[ "$?" = "0" ]]; then
+	    DMOD_ID=$(get_mod_id)
+	    DMOD_ID="${DMOD_ID%$'\r'}"
+	    if [[ "${DMOD_ID}" = "0" ]]; then
+		sed -i 's/^publishedid.*$/publishedid \= '${MOD_ID}'\;/' "${MODS_PATH}"/meta.cpp
+	    fi
+	fi
+
+	echo -ne "Do you want to symlink the downloaded MOD to your MODs folder in ARMA3Server folder?"
 	# Ask user to create the symbolic link for downloaded MOD to an ArmA 3 Server's mods folder
-	read -n1 SLINK
+	read -r -n1 SLINK
 	case "${SLINK}" in
 	    y | Y )
 		MOD_NAME=$(get_mod_name)
-		echo "${MOD_NAME}"
+
 		if [[ -d "${INST_MODS_PATH}/${MOD_NAME}" ]]; then
 		    mv "${INST_MODS_PATH}/${MOD_NAME}" "${INST_MODS_PATH}/${MOD_NAME}_old"
 		elif [[ -L "${INST_MODS_PATH}/${MOD_NAME}" ]]; then
-		    rm "${INST_MODS_PATH}/${MOD_NAME}" ]]
+		    rm "${INST_MODS_PATH}/${MOD_NAME}"
 		fi
-		ln -s "${MODS_PATH}" "${INST_MODS_PATH}/${MOD_NAME}"
+
+		ln -s "${MODS_PATH}" "${INST_MODS_PATH}"/"${MOD_NAME}"
+
 		if [[ "$?" = "0" ]]; then
 		    echo -ne "Done! Symbolic link was created!\n"
 		else
@@ -266,7 +300,7 @@ case "${ACTION}" in
 		;;
 	esac
 
-	echo -ne "Do you want to transform all file's and directories names from UPPER to LOWER case?\n"
+	echo -ne "Do you want to transform all file's and directories names from UPPER to LOWER case?"
 	# Ask user to transform the names from upper to lower case
 	read -r -n1 TRANSFORM
 	    case "${TRANSFORM}" in
@@ -275,7 +309,8 @@ case "${ACTION}" in
 		    exit 0
 		    ;;
 		* )
-		    echo -ne "Warning! You're selected to DO NOT transform the Upper case letters in a MOD's directory and file name. It could cause the probles in MOD includding to ArmA 3."
+		    echo -ne "Warning! You're selected to DO NOT transform the Upper case letters in a MOD's directory and file name. It could cause the probles with connecting the MOD to ArmA 3."
+		    echo ""
 		    exit 0
 		    ;;
 	    esac
