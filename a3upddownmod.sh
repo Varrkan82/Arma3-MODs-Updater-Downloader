@@ -57,8 +57,7 @@ authcheck(){
   # Check are Steam login and passwrod is pre-configured
   if [[ -z "${STEAM_LOGIN}" ]]; then
     clear
-    echo -ne "Steam login is undefined. Please, enter it now:\n"
-    read -er STEAM_LOGIN
+    read -e -p "Steam login is undefined. Please, enter it now: " STEAM_LOGIN
     if [[ -z "${STEAM_LOGIN}" ]]; then
       echo -ne "Steam login not specified! Exiting!\n"
       exit 2
@@ -66,8 +65,7 @@ authcheck(){
   fi
   if [[ -z "${STEAM_PASS}" ]]; then
     clear
-    echo -ne "Steam password is undefined. Please, enter it now (password will not be displayed in console output!):\n"
-    read -sr STEAM_PASS
+    read -sep "Steam password is undefined. Please, enter it now (password will not be displayed in console output!): " STEAM_PASS
     if [[ -z "${STEAM_PASS}" ]]; then
       echo -ne "Steam password not specified! Exiting!\n"
       exit 2
@@ -174,6 +172,7 @@ read -er -n1 ACTION
 case "${ACTION}" in
   # Actions section
   c | C )
+    echo "Checking for updates..."
     # check all installed MODs for updates.
     TO_UP=( )
     for MOD_NAME in "${INST_MODS_LIST[@]}"; do
@@ -233,6 +232,8 @@ case "${ACTION}" in
         echo -ne "You have installed a MODs listed above. Please, select one or press 'Enter'.\n"
         # Ask user to enter a MOD's name to update
         read -e MOD_NAME
+
+	echo "Starting to update MOD ${MOD_NAME}..."
         # Check syntax
         if [[ "${MOD_NAME}" != @* && "${MOD_NAME}" != "" ]]; then
           echo -ne "Wrong MOD's name! Exiting!\n"
@@ -318,13 +319,12 @@ case "${ACTION}" in
   d | D )
     # Download section
     authcheck
-    echo -ne "Please, enter an Application ID in a Steam WokrShop to dowdnload.\n"
     echo ""
     # Ask user to enter a MOD Steam AppID
-    read -e MOD_ID
-    echo -ne "Application ID IS: ${MOD_ID}\n"
+    read -e -p "Please, enter an Application ID in a Steam WokrShop to dowdnload. " MOD_ID
+    echo "Application ID IS: ${MOD_ID}\n"
+    echo "Starting to download MOD ID ${MOD_ID}..."
     MODS_PATH="${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
-    echo -ne "${MODS_PATH}\n"
     MOD_UP_CMD=+"workshop_download_item ${STMAPPID} ${MOD_ID}"
     echo "${MOD_UP_CMD}"
 
