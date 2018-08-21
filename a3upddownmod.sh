@@ -43,10 +43,11 @@ STMAPPID="107410"                 # AppID of an ArmA 3 which used to download th
 CURRYEAR=$(date +%Y)                  # Current year
 CURL_CMD="/usr/bin/curl -s"               # CURL command
 STEAM_CHLOG_URL="https://steamcommunity.com/sharedfiles/filedetails/changelog"    # URL to get the date of the last MOD's update in a WorkShop
-# Cahnge the followed for your paths
+# Change it according to your paths
 STMCMD_PATH="/home/steam/arma3server/steamcmd"            # Path to 'steamcmd.sh' file
 INST_MODS_PATH="/home/steam/arma3server/serverfiles/mods"       # Path to ArmA 3 installed MODs in an installed  ArmA 3 server's directory
 WKSHP_PATH="/home/steam/Steam/steamapps/workshop"         # Path to there is Workshop downloaded the MODs
+
 # Optional variables
 STEAM_LOGIN=""                    # Steam login (with a purchased ArmA 3)
 STEAM_PASS=""                   # Steam password
