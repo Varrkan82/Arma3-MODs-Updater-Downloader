@@ -89,6 +89,16 @@ get_mod_id(){
   tr -d [:punct:]
 }
 
+
+get_wkshp_date(){
+  if [[ "$(${CURL_CMD} ${URL} | grep -m1 "Update:" | wc -w)" = "7" ]]; then
+    PRINT="$(${CURL_CMD} ${URL} | grep -m1 "Update:" | tr -d "," | awk '{ print $2" "$3" "$4" "$6 }')"
+  else
+    PRINT="$(${CURL_CMD} ${URL} | grep -m1 "Update:" | awk '{ print $2" "$3" "'${CURRYEAR}'" "$5 }')"
+  fi
+  WKSHP_UP_ST="${PRINT}"
+}
+
 : << INPROGRESS
 update_all(){
   "${STMCMD_PATH}"/steamcmd.sh +login "${STEAM_LOGIN}" "${STEAM_PASS}" "${MOD_UP_CMD}" validate +quit
@@ -116,7 +126,7 @@ download_mod(){
   fi
 }
 
-simplepromt(){
+simplepquery(){
   SELECT=false
   while ! $SELECT; do
     read -er -n1 ANSWER
@@ -173,10 +183,11 @@ INST_MODS_LIST=($(ls -1 "${INST_MODS_PATH}"))
 clear
 
 # Ask user for action
-echo -ne "What do you want to do?\n(u / U) - Update MOD \n(c / C) - Check all MODs for updates\n(d / D) - Download MOD?\n Any other selection will cause script to stop.\n"
-echo -ne "After selecting to 'Update' -> 'Single' - you will see the list of installed MODs.\n"
+echo -ne "After selecting to 'Update' -> 'Single' - you will see the list of installed MODs.\n\033[37;1;41mPlease, copy the needed name before exiting from the list.\nIt will be unavailabe after exit.\nTo get the list again - you'll need to restart the script\033[0m\n"
+echo -ne "What do you want to do? \n [u|U] - Update MOD \n [c|C] - Check all MODs for updates\n [d|D] - Download MOD?"
+echo -ne "Any other selection will cause script to stop.\n"
+read -ep "Make selection please: " ACTION
 
-read -er -n1 ACTION
 case "${ACTION}" in
   # Actions section
   c | C )
@@ -189,8 +200,10 @@ case "${ACTION}" in
       MOD_ID="${MOD_ID%$'\r'}"
       URL="${STEAM_CHLOG_URL}/${MOD_ID}"
       URL="${URL%$'\r'}"
-      WKSHP_UP_ST=$(${CURL_CMD} ${URL} | grep -m1 "Update:" | sed 's/\@/'${CURRYEAR}'/' | awk '{print $2" "$3" "$4" "$5}')  # Get the last update time of a MOD from WorkShop
 
+      get_wkshp_date
+#      WKSHP_UP_ST=$( | sed 's/\@/'${CURRYEAR}'/' | awk '{print $2" "$3" "$4" "$5}')  # Get the last update time of a MOD from WorkShop
+#      WKSHP_UP_ST=WKSHP
       UTIME=$(date --date="${WKSHP_UP_ST}" +%s)
       CTIME=$(date --date="$(stat ${MODS_PATH} | grep Modify | cut -d" " -f2-)" +%s ) 				#Fix for MC syntax hilighting #"
 
@@ -213,12 +226,11 @@ case "${ACTION}" in
     # Print MODs which could be updated
     if [[ ! -z "${TO_UP[@]}" ]]; then
       echo -ne "Mods ${TO_UP[*]} can be updated. Please, proceed manually."
-  # Reserved for further usage
-  #    update_all
+      # Reserved for further usage
+      # update_all
     else
       exit 0
     fi
-    #else
     ;;
   u | U )
     clear
@@ -238,7 +250,8 @@ case "${ACTION}" in
         echo -ne "$(ls ${INST_MODS_PATH})\n" | less
         echo -ne "Please, specify MOD's name (with '@' symbol in the begining too).\n"
         # Ask user to enter a MOD's name to update
-        read -ep "You have installed a MODs listed above. Please, select one or press 'Enter': " MOD_NAME
+        echo -ne "You have installed a MODs listed above. Please, select one or press 'Enter':\n"
+        read -er MOD_NAME
 
 	echo "Starting to update MOD ${MOD_NAME}..."
         # Check syntax
@@ -259,7 +272,8 @@ case "${ACTION}" in
 
           URL="${STEAM_CHLOG_URL}/${MOD_ID}"
           URL="${URL%$'\r'}"
-          WKSHP_UP_ST=$(${CURL_CMD} ${URL}| grep -m1 "Update:" | sed 's/\@/'${CURRYEAR}'/' | awk '{print $2" "$3" "$4" "$5}')
+#          WKSHP_UP_ST=$(${CURL_CMD} ${URL}| grep -m1 "Update:" | sed 's/\@/'${CURRYEAR}'/' | awk '{print $2" "$3" "$4" "$5}')
+          get_wkshp_date
 
           UTIME=$(date --date="${WKSHP_UP_ST}" +%s)
           CTIME=$(date --date="$(stat ${MODS_PATH} | grep Modify | cut -d" " -f2-)" +%s )   #Fix for MC syntax hilighting #"
@@ -268,21 +282,21 @@ case "${ACTION}" in
             echo "${MOD_UP_CMD}"
 
             if [[ -d "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" ]]; then
-              echo -ne "Workshop target directory for MOD ${MOD_NAME} is already present. Moving it to ${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}_old \n"
-              mv -f "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}_old"
+              echo "Workshop target directory for MOD ${MOD_NAME} is already present. Moving it to ${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}_old_$(date +%y%m%d-%H%M)"
+              mv -f "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}_$(date +%y%m%d-%H%M)"
             fi
 
             update_mod
 
             if [[ "$?" = "0" ]]; then
-              echo -ne "MODs updateis successfully downloaded to ${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}\n"
+              echo "MODs updateis successfully downloaded to ${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
               if [[ -L "${MODS_PATH}" ]]; then
                 rm "${MODS_PATH}"
                 ln -s "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" "${MODS_PATH}"
                 chk_ln_st
               elif [[ -d "${MODS_PATH}" ]]; then
                 mv -f "${MODS_PATH}" "${MODS_PATH}"_old_$(date +%y%m%d-%H%M)
-                echo -ne "Old MODs directory is moved to ${MODS_PATH}_old\n Creating symlink for an updated MOD.\n"
+                echo -ne "Old MODs directory is moved to ${MODS_PATH}_old_$(date +%y%m%d-%H%M)\n Creating symlink for an updated MOD.\n"
                 ln -s "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" "${MODS_PATH}"
                 chk_ln_st
               fi
@@ -290,22 +304,22 @@ case "${ACTION}" in
               fixappid "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
 
               if [[ "${LN_STATUS}" = "0" ]]; then
-                echo -ne "MOD is updated. Symbolik link to ${MODS_PATH} is created.\n"
+                echo "MOD is updated. Symbolik link to ${MODS_PATH} is created."
               else
                 echo -ne "Warning! Can't create symbolic link to a target MODs directory. Exit.\n"
                 exit 5
               fi
 
               # Ask user to transform the names from upper to lower case
-              echo -ne "Do you want to transform all files and directories names from UPPER to LOWER case? (y/Y or n/N)\n"
+              echo -ne "Do you want to transform all files and directories names from UPPER to LOWER case? [y/Y] or [n/N]\n"
 
-              simplepromt
+              simplequery
 
               if [[ "$?" = "0" ]]; then
                 find "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" -depth -exec rename 's/(.*)\/([^\/]*)/$1\/\L$2/' {} \;
                 exit 0
               elif [[ "$?" = "1" ]]; then
-                echo -ne "Warning! You're selected to DO NOT transform the Upper case letters in a MOD's directory and file name. It could cause the probles connecting the MOD to ArmA 3.\n"
+                echo -ne "Warning! You're selected to DO NOT transform the Upper case letters in a MOD's directory and file name.\n It could cause the probles connecting the MOD to ArmA 3.\n"
               fi
 
             fi
@@ -341,7 +355,7 @@ case "${ACTION}" in
     # Ask user to create the symbolic link for downloaded MOD to an ArmA 3 Server's mods folder
     echo  "Do you want to symlink the downloaded MOD to your MODs folder in ARMA3Server folder? (y/Y or n/N)"
 
-    simplepromt
+    simplequery
 
     if [[ "$?" = "0" ]]; then
       MOD_NAME=$(get_mod_name)
@@ -368,7 +382,7 @@ case "${ACTION}" in
     # Ask user to transform the names from upper to lower case
     echo -ne "Do you want to transform all file's and directories names from UPPER to LOWER case?\n"
     
-    simplepromt
+    simplequery
 
     if [[ "$?" = "0" ]]; then
       find "${MODS_PATH}" -depth -exec rename 's/(.*)\/([^\/]*)/$1\/\L$2/' {} \;
