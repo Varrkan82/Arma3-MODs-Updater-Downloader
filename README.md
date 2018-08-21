@@ -52,4 +52,3 @@ UPD: This could be fixed by re-downloading the MOD with 'publishedid =0;' in **m
 ## Plans
 1. Run script with a CLI options to make all jobs automatically
 2. Implement a batch updating of an all installed MODs
-3. Fix an issue with a date parsing from a Steam WorkShop of a too old MODs
