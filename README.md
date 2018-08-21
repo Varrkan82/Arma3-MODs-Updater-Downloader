@@ -8,7 +8,7 @@ This script is a full interactive. The complete automatic start is planing but n
 - Update one selected MOD by name
 - Download MOD by Steam AppID
 - Fix missed Steam AppID in 'meta.cpp' file during updating/downloading process. 
-  - REM: To make fixing possible during an Updating process it need to be manually updated once at first time before update of the selected MOD will started. All further updates will fix automatically it again and again.
+  - REM: To make fixing possible during an Updating process it need to be manually edited once at first time before update of the selected MOD will started. All further updates will fix automatically it again and again.
 - Create symlinks for Updated/Downloaded MODs
 - Transform the files and directories names from UPPER to LOWER case
 
