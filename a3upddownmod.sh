@@ -117,18 +117,26 @@ download_mod(){
 }
 
 simplepromt(){
-  read -er -n1 ANSWER
-  case "${ANSWER}" in
-    y | Y )
-      true
-      ;;
-    n | N )
-      false
-      ;;
-    * )
-      echo -ne "Wrong selection!\n"
-      ;;
-  esac
+  SELECT=false
+  while ! $SELECT; do
+    read -er -n1 ANSWER
+    case "${ANSWER}" in
+      y | Y )
+	SELECT=true
+        true
+        ;;
+      n | N )
+	SELECT=true
+        false
+        ;;
+      quit )
+	exit 7
+	;;
+      * )
+        echo -ne "Wrong selection! Try again or type 'quit' to interrupt process.\n"
+        ;;
+    esac
+  done
 }
 
 chk_ln_st(){
@@ -229,9 +237,8 @@ case "${ACTION}" in
         authcheck
         echo -ne "$(ls ${INST_MODS_PATH})\n" | less
         echo -ne "Please, specify MOD's name (with '@' symbol in the begining too).\n"
-        echo -ne "You have installed a MODs listed above. Please, select one or press 'Enter'.\n"
         # Ask user to enter a MOD's name to update
-        read -e MOD_NAME
+        read -ep "You have installed a MODs listed above. Please, select one or press 'Enter': " MOD_NAME
 
 	echo "Starting to update MOD ${MOD_NAME}..."
         # Check syntax
@@ -269,14 +276,13 @@ case "${ACTION}" in
 
             if [[ "$?" = "0" ]]; then
               echo -ne "MODs updateis successfully downloaded to ${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}\n"
-
-              if [[ -d "${MODS_PATH}" ]]; then
-                mv -f "${MODS_PATH}" "${MODS_PATH}"_old
-                echo -ne "Old MODs directory is moved to ${MODS_PATH}_old\n Creating symlink for an updated MOD.\n"
+              if [[ -L "${MODS_PATH}" ]]; then
+                rm "${MODS_PATH}"
                 ln -s "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" "${MODS_PATH}"
                 chk_ln_st
-              elif [[ -L "${MODS_PATH}" ]]; then
-                rm "${MODS_PATH}"
+              elif [[ -d "${MODS_PATH}" ]]; then
+                mv -f "${MODS_PATH}" "${MODS_PATH}"_old_$(date +%y%m%d-%H%M)
+                echo -ne "Old MODs directory is moved to ${MODS_PATH}_old\n Creating symlink for an updated MOD.\n"
                 ln -s "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" "${MODS_PATH}"
                 chk_ln_st
               fi
@@ -291,7 +297,7 @@ case "${ACTION}" in
               fi
 
               # Ask user to transform the names from upper to lower case
-              echo -ne "Do you want to transform all files and directories names from UPPER to LOWER case?\n"
+              echo -ne "Do you want to transform all files and directories names from UPPER to LOWER case? (y/Y or n/N)\n"
 
               simplepromt
 
@@ -333,20 +339,20 @@ case "${ACTION}" in
     fixappid
 
     # Ask user to create the symbolic link for downloaded MOD to an ArmA 3 Server's mods folder
-    echo  "Do you want to symlink the downloaded MOD to your MODs folder in ARMA3Server folder?"
+    echo  "Do you want to symlink the downloaded MOD to your MODs folder in ARMA3Server folder? (y/Y or n/N)"
 
     simplepromt
 
     if [[ "$?" = "0" ]]; then
       MOD_NAME=$(get_mod_name)
-
-      if [[ -d "${INST_MODS_PATH}/${MOD_NAME}" ]]; then
-        mv "${INST_MODS_PATH}/${MOD_NAME}" "${INST_MODS_PATH}/${MOD_NAME}_old"
-      elif [[ -L "${INST_MODS_PATH}/${MOD_NAME}" ]]; then
+      if [[ -L "${INST_MODS_PATH}/${MOD_NAME}" ]]; then
         rm "${INST_MODS_PATH}/${MOD_NAME}"
+      elif [[ -d "${INST_MODS_PATH}/${MOD_NAME}" ]]; then
+        mv "${INST_MODS_PATH}/${MOD_NAME}" "${INST_MODS_PATH}/${MOD_NAME}_old_$(date +%y%m%d-%H%M)"
       fi
 
       ln -s "${MODS_PATH}" "${INST_MODS_PATH}"/"${MOD_NAME}"
+
       chk_ln_st
 
       if [[ "${LN_STATUS}" = "0" ]]; then
