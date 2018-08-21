@@ -54,7 +54,7 @@ STEAM_PASS=""                   # Steam password
 
 ## Functions
 authcheck(){
-  # Check are Steam login and passwrod is pre-configured
+  # Checking for does the Steam login and password are pre-configured?
   if [[ -z "${STEAM_LOGIN}" ]]; then
     clear
     read -e -p "Steam login is undefined. Please, enter it now: " STEAM_LOGIN
