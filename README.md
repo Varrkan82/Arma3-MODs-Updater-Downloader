@@ -33,6 +33,7 @@ publishedid =773125288;
 name = "@ACE Compat_RHS_USAF";
 timestamp = 5248321387302862629;
 ```
+UPD: This could be fixed by re-downloading the MOD with 'publishedid =0;' in **meta.cpp** by current script. It will replace the '0' by pasted Steam Workshop AppID.
 
 ## Plans
 1. Run script with a CLI options to make all jobs automatically
