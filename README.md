@@ -2,16 +2,30 @@
 # BASH Script for ArmA 3 MODs updating/downloading for Linux Servers 
 
 This script is a full interactive. The complete automatic start is planing but not implemented yet.
-This script is able to update the separate (for now) MOD, download separate MOD and to check for updates of an all installed MODs.
-After downloading or updating the MOD this script will ask to make a symlink and to change MODs directory name and all files/directories names in it from upper to lower case.
+
+## Script's abilities:
+- Check all installed MODs for updates in a Steam Workshop
+- Update one selected MOD by name
+- Download MOD by Steam AppID
+- Fix missed Steam AppID in 'meta.cpp' file during updating/downloading process. 
+  - REM: To make fixing possible during an Updating process it need to be manually updated once at first time before update of the selected MOD will started. All further updates will fix automatically it again and again.
+- Create symlinks for Updated/Downloaded MODs
+- Transform the files and directories names from UPPER to LOWER case
+
+## Dependecies
+- curl
 
 ## Intstallation: 
-Just clone or download this script to the /home directory of a user which is running an ArmA 3 server. And set up the permissions to execute it for user.
+1. Clone or download this script to the /home directory of a user which is running an ArmA 3 server.
+2. Set up the permissions to execute it for user.
+3. Update paths to installed ArmA 3 Linux Server 'mods', to the Workshop directry, where steam downlading the modes and to the Steam WorkShop where the 'steamcmd.sh is located.
+4. OPTIONAL: Add your Steam login and password to variables 'STEAM_LOGIN' and 'STEAM_PASS'
+
 ## Usage: 
-Run the script and follow instructions.
+Run the script and follow an instructions.
 ## Known issues:
 - Script can't correctly parse the last update date of a MOD from the Steam WorkShop if it was updated in the past Year or earley. (For exapmle, the current year is 2018, but the mod was updated the last time at 2016. So, this situation will generate a message like "date: invalid date ‘24 Aug, 2016 2018’")
-- _**NOT A BUG**_: Some MODs has no an application ID in it's **meta.cpp** file (it's = 0). These MODs can't be updated by this script before editing the **meta.cpp** file. To make it work (just for a one time, it will be overwritten after update and need to be edited again before the next update) just copy the MOD's Steam AppID from the MOD's WorkShop link and replace the "0" here
+- _**NOT A BUG**_: Some MODs has no an application ID in it's **meta.cpp** file (it's = 0). These MODs can't be updated by this script before editing the **meta.cpp** file. To make it work - just copy the MOD's Steam AppID from the MOD's WorkShop link and replace the "0" here
 ```
 publishedid = 0;
 ```
