@@ -194,9 +194,7 @@ case "${ACTION}" in
         if [[ ${UTIME} -gt ${CTIME} ]]; then
           # Construct the list of MODs to update
           TO_UP+="${MOD_NAME} "
-#	  CLREOL=$'\x1B[K'
           echo -en "\033[37;1;42mMod ${MOD_NAME} can be updated.\033[0m\n"
-#          echo -ne "\e[1;4;101m\tMod ${MOD_NAME} can be updated.${CLREOL}\e[0m\n"
           continue
         else
           echo "MOD ${MOD_NAME} is already up to date!"
@@ -207,7 +205,8 @@ case "${ACTION}" in
     # Print MODs which could be updated
     if [[ ! -z "${TO_UP[@]}" ]]; then
       echo -ne "Mods ${TO_UP[*]} can be updated. Please, proceed manually."
-      #   update_all
+  # Reserved for further usage
+  #    update_all
     else
       exit 0
     fi
@@ -291,7 +290,7 @@ case "${ACTION}" in
 
               # Ask user to transform the names from upper to lower case
               echo -ne "Do you want to transform all files and directories names from UPPER to LOWER case?\n"
-            
+
               simplepromt
 
               if [[ "$?" = "0" ]]; then
@@ -331,7 +330,7 @@ case "${ACTION}" in
     download_mod
 
     fixappid
-    
+
     # Ask user to create the symbolic link for downloaded MOD to an ArmA 3 Server's mods folder
     echo  "Do you want to symlink the downloaded MOD to your MODs folder in ARMA3Server folder?"
 
