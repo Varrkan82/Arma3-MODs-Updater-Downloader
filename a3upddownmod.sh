@@ -126,7 +126,7 @@ download_mod(){
   fi
 }
 
-simplepquery(){
+simplequery(){
   SELECT=false
   while ! $SELECT; do
     read -er -n1 ANSWER
@@ -202,8 +202,7 @@ case "${ACTION}" in
       URL="${URL%$'\r'}"
 
       get_wkshp_date
-#      WKSHP_UP_ST=$( | sed 's/\@/'${CURRYEAR}'/' | awk '{print $2" "$3" "$4" "$5}')  # Get the last update time of a MOD from WorkShop
-#      WKSHP_UP_ST=WKSHP
+
       UTIME=$(date --date="${WKSHP_UP_ST}" +%s)
       CTIME=$(date --date="$(stat ${MODS_PATH} | grep Modify | cut -d" " -f2-)" +%s ) 				#Fix for MC syntax hilighting #"
 
@@ -272,7 +271,7 @@ case "${ACTION}" in
 
           URL="${STEAM_CHLOG_URL}/${MOD_ID}"
           URL="${URL%$'\r'}"
-#          WKSHP_UP_ST=$(${CURL_CMD} ${URL}| grep -m1 "Update:" | sed 's/\@/'${CURRYEAR}'/' | awk '{print $2" "$3" "$4" "$5}')
+
           get_wkshp_date
 
           UTIME=$(date --date="${WKSHP_UP_ST}" +%s)
