@@ -139,6 +139,7 @@ simplequery(){
         false
         ;;
       quit )
+        echo "\033[37;1;41mWarning!\033[0m Some important changes wasn't made. This could or not to cause the different problems."
         exit 7
 	      ;;
       * )
@@ -233,7 +234,7 @@ case "${ACTION}" in
   u | U )
     clear
     # Ask user to select update mode
-    echo -ne "How do you wnat to update? Batch(b/B) or Single(s/S) MOD?\n"
+    echo -ne "How do you want to update? Batch(b/B) or Single(s|S) MOD?\n"
 
     read -er -n1 UPD_M
     case "${UPD_M}" in
@@ -251,7 +252,7 @@ case "${ACTION}" in
         echo -ne "You have installed a MODs listed above. Please, enter the MODs name to update:\n"
         read -er MOD_NAME
 
-	echo "Starting to update MOD ${MOD_NAME}..."
+	      echo "Starting to update MOD ${MOD_NAME}..."
         # Check syntax
         if [[ "${MOD_NAME}" != @* && "${MOD_NAME}" != "" ]]; then
           echo -ne "Wrong MOD's name! Exiting!\n"
@@ -302,9 +303,9 @@ case "${ACTION}" in
               fixappid "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
 
               if [[ "${LN_STATUS}" = "0" ]]; then
-                echo "MOD is updated. Symbolik link to ${MODS_PATH} is created."
+                echo "\033[37;1;42mMOD is updated. Symbolik link to ${MODS_PATH} is created.\033[0m"
               else
-                echo -ne "Warning! Can't create symbolic link to a target MODs directory. Exit.\n"
+                echo -ne "\033[37;1;41mWarning!\033[0m Can't create symbolic link to a target MODs directory. Exit.\n"
                 exit 5
               fi
 
@@ -317,12 +318,12 @@ case "${ACTION}" in
                 find "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" -depth -exec rename 's/(.*)\/([^\/]*)/$1\/\L$2/' {} \;
                 exit 0
               elif [[ "$?" = "1" ]]; then
-                echo -ne "Warning! You're selected to DO NOT transform the Upper case letters in a MOD's directory and file name.\n It could cause the probles connecting the MOD to ArmA 3.\n"
+                echo -ne "\033[37;1;41mWarning!\033[0m You're selected to DO NOT transform the Upper case letters in a MOD's directory and file name.\n It could cause the probles connecting the MOD to ArmA 3.\n"
               fi
 
             fi
           else
-            echo -ne "MOD ${MOD_NAME} is already up to date.\n"
+            echo -ne "\033[37;1;42mMOD ${MOD_NAME} is already up to date.\033[37;1;42m\n"
             exit 0
           fi
         fi
@@ -351,7 +352,7 @@ case "${ACTION}" in
     fixappid
 
     # Ask user to create the symbolic link for downloaded MOD to an ArmA 3 Server's mods folder
-    echo  "Do you want to symlink the downloaded MOD to your MODs folder in ARMA3Server folder? (y/Y or n/N)"
+    echo  "Do you want to symlink the downloaded MOD to your MODs folder in ARMA3Server folder? [y|Y] or [n|N]: "
 
     simplequery
 
@@ -368,9 +369,9 @@ case "${ACTION}" in
       chk_ln_st
 
       if [[ "${LN_STATUS}" = "0" ]]; then
-        echo -ne "MOD is updated. Symbolik link from ${MODS_PATH} to ${INST_MODS_PATH}/${MOD_NAME} is created.\n"
+        echo -ne "\033[37;1;42mMOD is updated. Symbolik link from ${MODS_PATH} to ${INST_MODS_PATH}/${MOD_NAME} is created.\033[0m\n"
       else
-        echo -ne "Warning! Can't create symbolic link to a target MODs directory. Exit.\n"
+        echo -ne "\033[37;1;41mWarning!\033[0m Can't create symbolic link to a target MODs directory. Exit.\n"
         exit 5
       fi
     elif [[ "$?" = "1" ]]; then
