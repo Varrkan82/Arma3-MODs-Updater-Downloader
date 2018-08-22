@@ -118,7 +118,7 @@ checkupdates(){
   # check all installed MODs for updates.
   TO_UP=( )
   MOD_UP_CMD=( )
-  MOD_ID_LIST= ( )
+  MOD_ID_LIST=( )
   for MOD_NAME in "${INST_MODS_LIST[@]}"; do
     MODS_PATH="${INST_MODS_PATH}/${MOD_NAME}"
     MOD_ID=$(get_mod_id)
