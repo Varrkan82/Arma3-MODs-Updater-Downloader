@@ -100,7 +100,7 @@ get_wkshp_date(){
 
 : << INPROGRESS
 update_all(){
-  "${STMCMD_PATH}"/steamcmd.sh +login "${STEAM_LOGIN}" "${STEAM_PASS}" "${MOD_UP_CMD}" validate +quit
+  "${STMCMD_PATH}"/steamcmd.sh +login "${STEAM_LOGIN}" "${STEAM_PASS}" "${MOD_UP_CMD[@]}" validate +quit
 }
 INPROGRESS
 
@@ -128,7 +128,7 @@ download_mod(){
 simplequery(){
   SELECT=false
   while ! $SELECT; do
-    read -ep "Enter [y|Y]-Yes, [n|N]-No or [quit]-to abort" ANSWER
+    read -ep "Enter [y|Y]-Yes, [n|N]-No or [quit]-to abort: " ANSWER
     case "${ANSWER}" in
       y | Y )
 	SELECT=true
@@ -140,7 +140,7 @@ simplequery(){
         ;;
       quit )
         exit 7
-	;;
+	      ;;
       * )
         echo -ne "Wrong selection! Try again or type 'quit' to interrupt process.\n"
         ;;
