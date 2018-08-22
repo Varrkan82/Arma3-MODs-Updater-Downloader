@@ -74,6 +74,21 @@ authcheck(){
   clear
 }
 
+backupwkshpdir(){
+  if [[ -d "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" ]]; then
+    echo "Workshop target directory for MOD ${MOD_NAME} is already present. Moving it to ${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}_old_$(date +%y%m%d-%H%M)"
+    mv -f "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}_old_$(date +%y%m%d-%H%M)"
+  fi
+}
+
+backupmoddir(){
+  if [[ -L "${INST_MODS_PATH}/${MOD_NAME}" ]]; then
+    rm "${INST_MODS_PATH}/${MOD_NAME}"
+  elif [[ -d "${INST_MODS_PATH}/${MOD_NAME}" ]]; then
+    mv "${INST_MODS_PATH}/${MOD_NAME}" "${INST_MODS_PATH}/${MOD_NAME}_old_$(date +%y%m%d-%H%M)"
+  fi
+}
+
 get_mod_name(){
   grep -h "name" "${MODS_PATH}"/meta.cpp | \
   awk -F'"' '{print $2}' | \
@@ -98,9 +113,64 @@ get_wkshp_date(){
   WKSHP_UP_ST="${PRINT}"
 }
 
-: << INPROGRESS
+checkupdates(){
+  echo "Checking for updates..."
+  # check all installed MODs for updates.
+  TO_UP=( )
+  MOD_UP_CMD=( )
+  MOD_ID_LIST= ( )
+  for MOD_NAME in "${INST_MODS_LIST[@]}"; do
+    MODS_PATH="${INST_MODS_PATH}/${MOD_NAME}"
+    MOD_ID=$(get_mod_id)
+    MOD_ID="${MOD_ID%$'\r'}"
+    URL="${STEAM_CHLOG_URL}/${MOD_ID}"
+    URL="${URL%$'\r'}"
+
+    get_wkshp_date
+
+    UTIME=$(date --date="${WKSHP_UP_ST}" +%s)
+    CTIME=$(date --date="$(stat ${MODS_PATH} | grep Modify | cut -d" " -f2-)" +%s ) 				#Fix for MC syntax hilighting #"
+
+    if [[ "${MOD_ID}" = "0" ]]; then
+      echo -ne "\033[37;1;41mWrong ID for MOD ${MOD_NAME} in file 'meta.cpp'\033[0m You can update it manually and the next time it will be checked well. \n"
+      continue
+    else
+      # Compare update time
+      if [[ ${UTIME} -gt ${CTIME} ]]; then
+        # Construct the list of MODs to update
+        MOD_UP_CMD=+"workshop_download_item ${STMAPPID} ${MOD_ID}"
+        TO_UP+="${MOD_NAME} "
+        MOD_ID_LIST+="${MOD_ID} "
+        echo -en "\033[37;1;42mMod ${MOD_NAME} can be updated.\033[0m\n"
+        continue
+      else
+        echo "MOD ${MOD_NAME} is already up to date!"
+        continue
+      fi
+    fi
+  done
+  export MOD_UP_CMD
+}
+
 update_all(){
+  backupwkshpdir
+  backupmoddir
   "${STMCMD_PATH}"/steamcmd.sh +login "${STEAM_LOGIN}" "${STEAM_PASS}" "${MOD_UP_CMD[@]}" validate +quit
+  for M_ID in "${MOD_ID_LIST[@]}"; do
+    find "${WKSHP_PATH}/content/${STMAPPID}/${M_ID}" -depth -exec rename 's/(.*)\/([^\/]*)/$1\/\L$2/' {} \;
+  done
+}
+
+: << INPROGRESS
+batchfixes(){
+  for MOD_NAME in "${INST_MODS_LIST[@]}"; do
+    MODS_PATH="${INST_MODS_PATH}/${MOD_NAME}"
+    MOD_ID=$(get_mod_id)
+    MOD_ID="${MOD_ID%$'\r'}"
+    OLD_WKSHP_PATH=($(find ${WKSHP_PATH}/content/${STMAPPID} -type d -name "*_old_*"))
+    OLD_TARGET_PATH=($(find ${INST_MODS_PATH} -type d -name "*_old_*"))
+    fixappid
+  find "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" -depth -exec rename 's/(.*)\/([^\/]*)/$1\/\L$2/' {} \;
 }
 INPROGRESS
 
@@ -131,11 +201,11 @@ simplequery(){
     read -ep "Enter [y|Y]-Yes, [n|N]-No or [quit]-to abort: " ANSWER
     case "${ANSWER}" in
       y | Y )
-	SELECT=true
+        SELECT=true
         true
         ;;
       n | N )
-	SELECT=true
+        SELECT=true
         false
         ;;
       quit )
@@ -191,58 +261,45 @@ read -ep "Make selection please: " ACTION
 case "${ACTION}" in
   # Actions section
   c | C )
-    echo "Checking for updates..."
-    # check all installed MODs for updates.
-    TO_UP=( )
-    for MOD_NAME in "${INST_MODS_LIST[@]}"; do
-      MODS_PATH="${INST_MODS_PATH}/${MOD_NAME}"
-      MOD_ID=$(get_mod_id)
-      MOD_ID="${MOD_ID%$'\r'}"
-      URL="${STEAM_CHLOG_URL}/${MOD_ID}"
-      URL="${URL%$'\r'}"
+    checkupdates
 
-      get_wkshp_date
-
-      UTIME=$(date --date="${WKSHP_UP_ST}" +%s)
-      CTIME=$(date --date="$(stat ${MODS_PATH} | grep Modify | cut -d" " -f2-)" +%s ) 				#Fix for MC syntax hilighting #"
-
-      if [[ "${MOD_ID}" = "0" ]]; then
-        echo -ne "\033[37;1;41mWrong ID for MOD ${MOD_NAME} in file 'meta.cpp'\033[0m You can update it manually and the next time it will be checked well. \n"
-        continue
-      else
-        # Compare update time
-        if [[ ${UTIME} -gt ${CTIME} ]]; then
-          # Construct the list of MODs to update
-          TO_UP+="${MOD_NAME} "
-          echo -en "\033[37;1;42mMod ${MOD_NAME} can be updated.\033[0m\n"
-          continue
-        else
-          echo "MOD ${MOD_NAME} is already up to date!"
-          continue
-        fi
-      fi
-    done
     # Print MODs which could be updated
     if [[ ! -z "${TO_UP[@]}" ]]; then
       echo -ne "Mods ${TO_UP[*]} can be updated. Please, proceed manually."
-      # Reserved for further usage
-      # update_all
     else
+      echo "All MODs are up to date. Exiting."
       exit 0
     fi
     ;;
   u | U )
     clear
     # Ask user to select update mode
-    echo -ne "How do you want to update? Batch(b/B) or Single(s|S) MOD?\n"
+    echo -ne "How do you want to update? [b|B]-Batch or [s|S]-Single MOD?\n"
 
     read -er -n1 UPD_M
     case "${UPD_M}" in
       b | B )
-        echo -ne "Sorry, the batch updating not implemented yet. Exiting.\n"
+#        echo -ne "Sorry, the batch updating not implemented yet. Exiting.\n"
+        checkupdates
+        # Print MODs which could be updated
+        if [[ ! -z "${TO_UP[@]}" ]]; then
+          simplequery
+          echo -e "Mods ${TO_UP[*]} can be updated. Do you want to proceed? [y|Y] or [n|N]: "
+
+          if [[ "$?" = "0" ]]; then
+            authcheck
+            update_all
+          else
+            exit 7
+          fi
+
+        else
+          echo "All MODs are up to date. Exiting."
+          exit 0
+        fi
         # Reserved for further usage
         # MOD_UP_CMD=( )
-        exit 0
+#        exit 0
         ;;
       s | S )
         authcheck
@@ -254,7 +311,7 @@ case "${ACTION}" in
 
 	      echo "Starting to update MOD ${MOD_NAME}..."
         # Check syntax
-        if [[ "${MOD_NAME}" != @* && "${MOD_NAME}" != "" ]]; then
+        if [[ "${MOD_NAME}" != @* || "${MOD_NAME}" != "" ]]; then
           echo -ne "Wrong MOD's name! Exiting!\n"
           exit 4
         else
@@ -280,13 +337,16 @@ case "${ACTION}" in
             MOD_UP_CMD=+"workshop_download_item ${STMAPPID} ${MOD_ID}"
             echo "${MOD_UP_CMD}"
 
+            backupwkshpdir
+: << BACKUPW
             if [[ -d "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" ]]; then
               echo "Workshop target directory for MOD ${MOD_NAME} is already present. Moving it to ${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}_old_$(date +%y%m%d-%H%M)"
-              mv -f "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}_$(date +%y%m%d-%H%M)"
+              mv -f "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}_old_$(date +%y%m%d-%H%M)"
             fi
-
+BACKUPW
             update_mod
 
+: << BACKUPTU
             if [[ "$?" = "0" ]]; then
               echo "MODs updateis successfully downloaded to ${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
               if [[ -L "${MODS_PATH}" ]]; then
@@ -299,6 +359,8 @@ case "${ACTION}" in
                 ln -s "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" "${MODS_PATH}"
                 chk_ln_st
               fi
+BACKUPTU
+              backupmoddir
 
               fixappid "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
 
@@ -310,7 +372,7 @@ case "${ACTION}" in
               fi
 
               # Ask user to transform the names from upper to lower case
-              echo -ne "Do you want to transform all files and directories names from UPPER to LOWER case? [y/Y] or [n/N]\n"
+              echo -ne "Do you want to transform all files and directories names from UPPER to LOWER case? [y/Y] or [n/N]: "
 
               simplequery
 
@@ -358,11 +420,16 @@ case "${ACTION}" in
 
     if [[ "$?" = "0" ]]; then
       MOD_NAME=$(get_mod_name)
+
+: << BACKUPTD
       if [[ -L "${INST_MODS_PATH}/${MOD_NAME}" ]]; then
         rm "${INST_MODS_PATH}/${MOD_NAME}"
       elif [[ -d "${INST_MODS_PATH}/${MOD_NAME}" ]]; then
         mv "${INST_MODS_PATH}/${MOD_NAME}" "${INST_MODS_PATH}/${MOD_NAME}_old_$(date +%y%m%d-%H%M)"
       fi
+BACKUPTD
+
+      backupmoddir
 
       ln -s "${MODS_PATH}" "${INST_MODS_PATH}"/"${MOD_NAME}"
 
