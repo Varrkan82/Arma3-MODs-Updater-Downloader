@@ -89,7 +89,6 @@ get_mod_id(){
   tr -d [:punct:]
 }
 
-
 get_wkshp_date(){
   if [[ "$(${CURL_CMD} ${URL} | grep -m1 "Update:" | wc -w)" = "7" ]]; then
     PRINT="$(${CURL_CMD} ${URL} | grep -m1 "Update:" | tr -d "," | awk '{ print $2" "$3" "$4" "$6 }')"
@@ -129,7 +128,7 @@ download_mod(){
 simplequery(){
   SELECT=false
   while ! $SELECT; do
-    read -er -n1 ANSWER
+    read -ep "Enter [y|Y]-Yes, [n|N]-No or [quit]-to abort" ANSWER
     case "${ANSWER}" in
       y | Y )
 	SELECT=true
@@ -140,7 +139,7 @@ simplequery(){
         false
         ;;
       quit )
-	exit 7
+        exit 7
 	;;
       * )
         echo -ne "Wrong selection! Try again or type 'quit' to interrupt process.\n"
@@ -249,7 +248,7 @@ case "${ACTION}" in
         echo -ne "$(ls ${INST_MODS_PATH})\n" | less
         echo -ne "Please, specify MOD's name (with '@' symbol in the begining too).\n"
         # Ask user to enter a MOD's name to update
-        echo -ne "You have installed a MODs listed above. Please, select one or press 'Enter':\n"
+        echo -ne "You have installed a MODs listed above. Please, enter the MODs name to update:\n"
         read -er MOD_NAME
 
 	echo "Starting to update MOD ${MOD_NAME}..."
@@ -377,10 +376,10 @@ case "${ACTION}" in
     elif [[ "$?" = "1" ]]; then
       echo -ne "Done! Symbolic link not created!\n"
     fi
-    
+
     # Ask user to transform the names from upper to lower case
     echo -ne "Do you want to transform all file's and directories names from UPPER to LOWER case?\n"
-    
+
     simplequery
 
     if [[ "$?" = "0" ]]; then
