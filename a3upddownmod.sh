@@ -346,9 +346,9 @@ case "${ACTION}" in
 BACKUPW
             update_mod
 
-: << BACKUPTU
             if [[ "$?" = "0" ]]; then
               echo "MODs updateis successfully downloaded to ${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
+: << BACKUPTU
               if [[ -L "${MODS_PATH}" ]]; then
                 rm "${MODS_PATH}"
                 ln -s "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" "${MODS_PATH}"
