@@ -52,7 +52,6 @@ WKSHP_PATH="/home/steam/Steam/steamapps/workshop"         # Path to there is Wor
 STEAM_LOGIN=""                    # Steam login (with a purchased ArmA 3)
 STEAM_PASS=""                   # Steam password
 
-#: << TEMPDISABLED
 # Check for needed paths and for CURL
 if [[ ! -d "${STMCMD_PATH}" || ! -d "${INST_MODS_PATH}" || ! -d "${WKSHP_PATH}" ]]; then
   echo "Some path(s) is/(are) missing. Check - does an all paths are correctly setted up! Exit."
@@ -60,7 +59,6 @@ if [[ ! -d "${STMCMD_PATH}" || ! -d "${INST_MODS_PATH}" || ! -d "${WKSHP_PATH}" 
 elif [[ ! -f "${CURL_CMD}" ]]; then
   echo "CURL is missing. Check - does it installed and pass the correct path to it into variable 'CURL_CMD'. Exit."
 fi
-#TEMPDISABLED
 
 ## Functions
 authcheck(){
@@ -133,7 +131,7 @@ get_wkshp_date(){
   WKSHP_UP_ST="${PRINT}"
 }
 
-coundown(){
+countdown(){
   local TIMEOUT="10"
   for (( TIMER="${TIMEOUT}"; TIMER>0; TIMER--)); do
     printf "\rDisplay the list in: ${TIMER} "
@@ -265,16 +263,6 @@ simplequery(){
   done
 }
 
-: << BACKUPFN
-chk_ln_st(){
-  if [[ "$?" = "0" ]]; then
-    LN_STATUS="0"
-  else
-    LN_STATUS="1"
-  fi
-}
-BACKUPFN
-
 fixappid(){
   if [[ "$?" = "0" ]]; then
     if [[ -z "$1" ]]; then
@@ -350,7 +338,7 @@ case "${ACTION}" in
       s | S )
         authcheck
 
-        coundown
+        countdown
 
         echo -ne "$(ls ${INST_MODS_PATH})\n" | less
         echo -ne "Please, specify MOD's name (with '@' symbol in the begining too).\n"
