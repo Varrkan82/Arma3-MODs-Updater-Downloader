@@ -52,6 +52,14 @@ WKSHP_PATH="/home/steam/Steam/steamapps/workshop"         # Path to there is Wor
 STEAM_LOGIN=""                    # Steam login (with a purchased ArmA 3)
 STEAM_PASS=""                   # Steam password
 
+# Check for needed paths and for CURL
+if [[ ! -d "${STMCMD_PATH}" || ! -d "${INST_MODS_PATH}" || ! -d "${WKSHP_PATH}" ]]; then
+  echo "Some path(s) is/(are) missing. Check - does an all paths are correctly setted up! Exit."
+  exit 11
+elif [[ ! -f "${CURL_CMD}" ]]; then
+  echo "CURL is missing. Check - does it installed and pass the correct path to it into variable 'CURL_CMD'. Exit."
+fi
+
 ## Functions
 authcheck(){
   # Checking for does the Steam login and password are pre-configured?
@@ -123,6 +131,19 @@ get_wkshp_date(){
   WKSHP_UP_ST="${PRINT}"
 }
 
+coundown(){
+  local TIMEOUT="10"
+  for (( TIMER="${TIMEOUT}"; TIMER>0; TIMER--)); do
+    printf "\rDisplay the list in: ${TIMER} "
+    read -s -t 1 -n1
+    if [[ "$?" = "0" ]]; then
+      break
+    fi
+    echo "Press any key to continue without waiting... :)"
+    clear
+  done
+}
+
 checkupdates(){
   echo "Checking for updates..."
   # check all installed MODs for updates.
@@ -169,7 +190,7 @@ checkupdates(){
 update_all(){
 set -x
   for MOD_NAME in "${TO_UP[@]}"; do
-echo "${MOD_NAME}"
+echo "$MOD_NAME"
     backupmoddir
   done
 echo "${MOD_UP_CMD[@]}"
@@ -203,6 +224,7 @@ update_mod(){
     exit 1
   else
     echo -e "\n"
+    return 0
   fi
 }
 
@@ -213,13 +235,14 @@ download_mod(){
     exit 1
   else
     echo -e "\n"
+    return 0
   fi
 }
 
 simplequery(){
   SELECT=false
   while ! $SELECT; do
-    read -ep "Enter [y|Y]-Yes, [n|N]-No or [quit]-to abort: " ANSWER
+    read -e -p "Enter [y|Y]-Yes, [n|N]-No or [quit]-to abort: " ANSWER
     case "${ANSWER}" in
       y | Y )
         SELECT=true
@@ -240,6 +263,7 @@ simplequery(){
   done
 }
 
+: << BACKUPFN
 chk_ln_st(){
   if [[ "$?" = "0" ]]; then
     LN_STATUS="0"
@@ -247,6 +271,7 @@ chk_ln_st(){
     LN_STATUS="1"
   fi
 }
+BACKUPFN
 
 fixappid(){
   if [[ "$?" = "0" ]]; then
@@ -277,7 +302,8 @@ clear
 echo -ne "After selecting to 'Update' -> 'Single' - you will see the list of installed MODs.\n\033[37;1;41mPlease, copy the needed name before exiting from the list.\nIt will be unavailabe after exit.\nTo get the list again - you'll need to restart the script\033[0m\n"
 echo -ne "What do you want to do? \n [u|U] - Update MOD \n [c|C] - Check all MODs for updates\n [d|D] - Download MOD?"
 echo -ne "Any other selection will cause script to stop.\n"
-read -ep "Make selection please: " ACTION
+
+read -e -p "Make selection please: " ACTION
 
 case "${ACTION}" in
   # Actions section
@@ -295,9 +321,9 @@ case "${ACTION}" in
   u | U )
     clear
     # Ask user to select update mode
-    echo -ne "How do you want to update? [b|B]-Batch or [s|S]-Single MOD?\n"
+#    echo -ne "How do you want to update? [b|B]-Batch or [s|S]-Single MOD?\n"
 
-    read -er -n1 UPD_M
+    read -e -p "How do you want to update? [b|B]-Batch or [s|S]-Single MOD? " UPD_M
     case "${UPD_M}" in
       b | B )
 	# Check updates for installed MODs
@@ -321,6 +347,9 @@ case "${ACTION}" in
         ;;
       s | S )
         authcheck
+
+        coundown
+
         echo -ne "$(ls ${INST_MODS_PATH})\n" | less
         echo -ne "Please, specify MOD's name (with '@' symbol in the begining too).\n"
         # Ask user to enter a MOD's name to update
@@ -356,37 +385,18 @@ case "${ACTION}" in
             echo "${MOD_UP_CMD}"
 
             backupwkshpdir
-: << BACKUPW
-            if [[ -d "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" ]]; then
-              echo "Workshop target directory for MOD ${MOD_NAME} is already present. Moving it to ${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}_old_$(date +%y%m%d-%H%M)"
-              mv -f "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}_old_$(date +%y%m%d-%H%M)"
-            fi
-BACKUPW
             update_mod
 
             if [[ "$?" = "0" ]]; then
               echo "MODs updateis successfully downloaded to ${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
-: << BACKUPTD
-              if [[ -L "${MODS_PATH}" ]]; then
-                rm "${MODS_PATH}"
-                ln -s "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" "${MODS_PATH}"
-                chk_ln_st
-              elif [[ -d "${MODS_PATH}" ]]; then
-                mv -f "${MODS_PATH}" "${MODS_PATH}"_old_$(date +%y%m%d-%H%M)
-                echo -ne "Old MODs directory is moved to ${MODS_PATH}_old_$(date +%y%m%d-%H%M)\n Creating symlink for an updated MOD.\n"
-                ln -s "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" "${MODS_PATH}"
-                chk_ln_st
-              fi
-BACKUPTD
+
               backupmoddir
 
               ln -s "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" "${MODS_PATH}"
-              chk_ln_st
 
-              fixappid "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
-
-              if [[ "${LN_STATUS}" = "0" ]]; then
+              if [[ "$?" = "0" ]]; then
                 echo "\033[37;1;42mMOD is updated. Symbolik link to ${MODS_PATH} is created.\033[0m"
+                fixappid "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
               else
                 echo -ne "\033[37;1;41mWarning!\033[0m Can't create symbolic link to a target MODs directory. Exit.\n"
                 exit 5
@@ -442,20 +452,11 @@ BACKUPTD
     if [[ "$?" = "0" ]]; then
       MOD_NAME=$(get_mod_name)
 
-: << BACKUPTD
-      if [[ -L "${INST_MODS_PATH}/${MOD_NAME}" ]]; then
-        rm "${INST_MODS_PATH}/${MOD_NAME}"
-      elif [[ -d "${INST_MODS_PATH}/${MOD_NAME}" ]]; then
-        mv "${INST_MODS_PATH}/${MOD_NAME}" "${INST_MODS_PATH}/${MOD_NAME}_old_$(date +%y%m%d-%H%M)"
-      fi
-BACKUPTD
-
       backupmoddir
 
       ln -s "${MODS_PATH}" "${INST_MODS_PATH}"/"${MOD_NAME}"
-      chk_ln_st
 
-      if [[ "${LN_STATUS}" = "0" ]]; then
+      if [[ "$?" = "0" ]]; then
         echo -ne "\033[37;1;42mMOD is downloaded. Symbolik link from ${MODS_PATH} to ${INST_MODS_PATH}/${MOD_NAME} is created.\033[0m\n"
       else
         echo -ne "\033[37;1;41mWarning!\033[0m Can't create symbolic link to a target MODs directory. Exit.\n"
