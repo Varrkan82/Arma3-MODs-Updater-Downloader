@@ -52,6 +52,7 @@ WKSHP_PATH="/home/steam/Steam/steamapps/workshop"         # Path to there is Wor
 STEAM_LOGIN=""                    # Steam login (with a purchased ArmA 3)
 STEAM_PASS=""                   # Steam password
 
+#: << TEMPDISABLED
 # Check for needed paths and for CURL
 if [[ ! -d "${STMCMD_PATH}" || ! -d "${INST_MODS_PATH}" || ! -d "${WKSHP_PATH}" ]]; then
   echo "Some path(s) is/(are) missing. Check - does an all paths are correctly setted up! Exit."
@@ -59,6 +60,7 @@ if [[ ! -d "${STMCMD_PATH}" || ! -d "${INST_MODS_PATH}" || ! -d "${WKSHP_PATH}" 
 elif [[ ! -f "${CURL_CMD}" ]]; then
   echo "CURL is missing. Check - does it installed and pass the correct path to it into variable 'CURL_CMD'. Exit."
 fi
+#TEMPDISABLED
 
 ## Functions
 authcheck(){
