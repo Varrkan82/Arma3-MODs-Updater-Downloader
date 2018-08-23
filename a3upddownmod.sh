@@ -134,12 +134,12 @@ get_wkshp_date(){
 countdown(){
   local TIMEOUT="10"
   for (( TIMER="${TIMEOUT}"; TIMER>0; TIMER--)); do
-    printf "\rDisplay the list in: ${TIMER} or\n Press any key to continue without waiting... :)"
+    printf "\rDisplay the list in: ${TIMER}\nor Press any key to continue without waiting... :)"
     read -s -t 1 -n1
     if [[ "$?" = "0" ]]; then
       break
     fi
-    echo "Press any key to continue without waiting... :)"
+#    echo "Press any key to continue without waiting... :)"
     clear
   done
 }
