@@ -75,18 +75,28 @@ authcheck(){
 }
 
 backupwkshpdir(){
+set -x
   if [[ -d "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" ]]; then
+echo "$?"
     echo "Workshop target directory for MOD ${MOD_NAME} is already present. Moving it to ${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}_old_$(date +%y%m%d-%H%M)"
     mv -f "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}_old_$(date +%y%m%d-%H%M)"
+echo $?
   fi
+set +x
 }
 
 backupmoddir(){
+set -x
   if [[ -L "${INST_MODS_PATH}/${MOD_NAME}" ]]; then
-    rm "${INST_MODS_PATH}/${MOD_NAME}"
+echo "$?"
+    rm ${INST_MODS_PATH}/${MOD_NAME}
+echo "$?"
   elif [[ -d "${INST_MODS_PATH}/${MOD_NAME}" ]]; then
+echo "$?"
     mv "${INST_MODS_PATH}/${MOD_NAME}" "${INST_MODS_PATH}/${MOD_NAME}_old_$(date +%y%m%d-%H%M)"
+echo "$?"
   fi
+set +x
 }
 
 get_mod_name(){
@@ -138,10 +148,11 @@ checkupdates(){
       # Compare update time
       if [[ ${UTIME} -gt ${CTIME} ]]; then
         # Construct the list of MODs to update
-        MOD_UP_CMD=+"workshop_download_item ${STMAPPID} ${MOD_ID}"
+        MOD_UP_CMD+=+"workshop_download_item ${STMAPPID} ${MOD_ID} "
         TO_UP+="${MOD_NAME} "
         MOD_ID_LIST+="${MOD_ID} "
         echo -en "\033[37;1;42mMod ${MOD_NAME} can be updated.\033[0m\n"
+
         continue
       else
         echo "MOD ${MOD_NAME} is already up to date!"
@@ -149,16 +160,26 @@ checkupdates(){
       fi
     fi
   done
+  export MOD_ID
   export MOD_UP_CMD
+  export MOD_ID_LIST
+  export TO_UP
 }
 
 update_all(){
-  backupwkshpdir
-  backupmoddir
-  "${STMCMD_PATH}"/steamcmd.sh +login "${STEAM_LOGIN}" "${STEAM_PASS}" "${MOD_UP_CMD[@]}" validate +quit
-  for M_ID in "${MOD_ID_LIST[@]}"; do
-    find "${WKSHP_PATH}/content/${STMAPPID}/${M_ID}" -depth -exec rename 's/(.*)\/([^\/]*)/$1\/\L$2/' {} \;
+set -x
+  for MOD_NAME in "${TO_UP[@]}"; do
+echo "${MOD_NAME}"
+    backupmoddir
   done
+echo "${MOD_UP_CMD[@]}"
+#  ${STMCMD_PATH}/steamcmd.sh +login ${STEAM_LOGIN} ${STEAM_PASS} "${MOD_UP_CMD[@]}" validate +quit
+  for MOD_ID in "${MOD_ID_LIST[@]}"; do
+    backupwkshpdir
+echo ${WKSHP_PATH}/content/${STMAPPID}/"${MOD_ID}"
+#    find ${WKSHP_PATH}/content/${STMAPPID}/"${MOD_ID}" -depth -exec rename 's/(.*)\/([^\/]*)/$1\/\L$2/' {} \;
+  done
+set -x
 }
 
 : << INPROGRESS
@@ -248,7 +269,7 @@ fixappid(){
 ## End of a functions block
 
 # List installed mods
-INST_MODS_LIST=($(ls -1 "${INST_MODS_PATH}"))
+INST_MODS_LIST=($(ls -1 "${INST_MODS_PATH}"| grep -v "_old_" ))
 
 clear
 
@@ -279,12 +300,12 @@ case "${ACTION}" in
     read -er -n1 UPD_M
     case "${UPD_M}" in
       b | B )
-#        echo -ne "Sorry, the batch updating not implemented yet. Exiting.\n"
+	# Check updates for installed MODs
         checkupdates
         # Print MODs which could be updated
         if [[ ! -z "${TO_UP[@]}" ]]; then
           simplequery
-          echo -e "Mods ${TO_UP[*]} can be updated. Do you want to proceed? [y|Y] or [n|N]: "
+          echo -e "Mods ${TO_UP[@]} can be updated. Do you want to proceed? [y|Y] or [n|N]: "
 
           if [[ "$?" = "0" ]]; then
             authcheck
@@ -297,9 +318,6 @@ case "${ACTION}" in
           echo "All MODs are up to date. Exiting."
           exit 0
         fi
-        # Reserved for further usage
-        # MOD_UP_CMD=( )
-#        exit 0
         ;;
       s | S )
         authcheck
@@ -311,7 +329,7 @@ case "${ACTION}" in
 
 	      echo "Starting to update MOD ${MOD_NAME}..."
         # Check syntax
-        if [[ "${MOD_NAME}" != @* || "${MOD_NAME}" != "" ]]; then
+        if [[ "${MOD_NAME}" != @* && "${MOD_NAME}" != "" ]]; then
           echo -ne "Wrong MOD's name! Exiting!\n"
           exit 4
         else
@@ -348,7 +366,7 @@ BACKUPW
 
             if [[ "$?" = "0" ]]; then
               echo "MODs updateis successfully downloaded to ${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
-: << BACKUPTU
+: << BACKUPTD
               if [[ -L "${MODS_PATH}" ]]; then
                 rm "${MODS_PATH}"
                 ln -s "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" "${MODS_PATH}"
@@ -359,8 +377,11 @@ BACKUPW
                 ln -s "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" "${MODS_PATH}"
                 chk_ln_st
               fi
-BACKUPTU
+BACKUPTD
               backupmoddir
+
+              ln -s "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" "${MODS_PATH}"
+              chk_ln_st
 
               fixappid "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
 
@@ -372,7 +393,7 @@ BACKUPTU
               fi
 
               # Ask user to transform the names from upper to lower case
-              echo -ne "Do you want to transform all files and directories names from UPPER to LOWER case? [y/Y] or [n/N]: "
+              echo "Do you want to transform all files and directories names from UPPER to LOWER case?"
 
               simplequery
 
@@ -402,7 +423,7 @@ BACKUPTU
     authcheck
     echo ""
     # Ask user to enter a MOD Steam AppID
-    read -e -p "Please, enter an Application ID in a Steam WokrShop to dowdnload. " MOD_ID
+    read -e -p "Please, enter an Application ID in a Steam WokrShop to dowdnload: " MOD_ID
     echo "Application ID IS: ${MOD_ID}\n"
     echo "Starting to download MOD ID ${MOD_ID}..."
     MODS_PATH="${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
@@ -432,11 +453,10 @@ BACKUPTD
       backupmoddir
 
       ln -s "${MODS_PATH}" "${INST_MODS_PATH}"/"${MOD_NAME}"
-
       chk_ln_st
 
       if [[ "${LN_STATUS}" = "0" ]]; then
-        echo -ne "\033[37;1;42mMOD is updated. Symbolik link from ${MODS_PATH} to ${INST_MODS_PATH}/${MOD_NAME} is created.\033[0m\n"
+        echo -ne "\033[37;1;42mMOD is downloaded. Symbolik link from ${MODS_PATH} to ${INST_MODS_PATH}/${MOD_NAME} is created.\033[0m\n"
       else
         echo -ne "\033[37;1;41mWarning!\033[0m Can't create symbolic link to a target MODs directory. Exit.\n"
         exit 5
