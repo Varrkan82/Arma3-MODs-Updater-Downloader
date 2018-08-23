@@ -169,7 +169,7 @@ checkupdates(){
 update_all(){
 set -x
   for MOD_NAME in "${TO_UP[@]}"; do
-echo "${MOD_NAME}"
+echo "$MOD_NAME"
     backupmoddir
   done
 echo "${MOD_UP_CMD[@]}"
@@ -203,6 +203,7 @@ update_mod(){
     exit 1
   else
     echo -e "\n"
+    return 0
   fi
 }
 
@@ -213,6 +214,7 @@ download_mod(){
     exit 1
   else
     echo -e "\n"
+    return 0
   fi
 }
 
@@ -240,6 +242,7 @@ simplequery(){
   done
 }
 
+: << BACKUPFN
 chk_ln_st(){
   if [[ "$?" = "0" ]]; then
     LN_STATUS="0"
@@ -247,6 +250,7 @@ chk_ln_st(){
     LN_STATUS="1"
   fi
 }
+BACKUPFN
 
 fixappid(){
   if [[ "$?" = "0" ]]; then
@@ -320,73 +324,18 @@ case "${ACTION}" in
         fi
         ;;
       s | S )
-        authcheck
-        echo -ne "$(ls ${INST_MODS_PATH})\n" | less
-        echo -ne "Please, specify MOD's name (with '@' symbol in the begining too).\n"
-        # Ask user to enter a MOD's name to update
-        echo -ne "You have installed a MODs listed above. Please, enter the MODs name to update:\n"
-        read -er MOD_NAME
-
-	      echo "Starting to update MOD ${MOD_NAME}..."
-        # Check syntax
-        if [[ "${MOD_NAME}" != @* && "${MOD_NAME}" != "" ]]; then
-          echo -ne "Wrong MOD's name! Exiting!\n"
-          exit 4
-        else
-          # Update the single selected MOD
-          MODS_PATH="${INST_MODS_PATH}/${MOD_NAME}"
-          MOD_ID=$(get_mod_id)
-          MOD_ID="${MOD_ID%$'\r'}"
-
-          if [[ "${MOD_ID}" = "0" ]]; then
-            echo -ne "MOD application ID is not configured for mod ${MOD_NAME} in file ${MODS_PATH}/meta.cpp \n"
-            echo -ne "Find it by the MODs name in a Steam Workshop and update in MODs 'meta.cpp' file or use Download option to get MOD by it's ID. Exiting.\n"
-            exit 6
-          fi
-
-          URL="${STEAM_CHLOG_URL}/${MOD_ID}"
-          URL="${URL%$'\r'}"
-
-          get_wkshp_date
-
-          UTIME=$(date --date="${WKSHP_UP_ST}" +%s)
-          CTIME=$(date --date="$(stat ${MODS_PATH} | grep Modify | cut -d" " -f2-)" +%s )   #Fix for MC syntax hilighting #"
-          if [[ ${UTIME} -gt ${CTIME} ]]; then
-            MOD_UP_CMD=+"workshop_download_item ${STMAPPID} ${MOD_ID}"
-            echo "${MOD_UP_CMD}"
-
-            backupwkshpdir
-: << BACKUPW
-            if [[ -d "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" ]]; then
-              echo "Workshop target directory for MOD ${MOD_NAME} is already present. Moving it to ${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}_old_$(date +%y%m%d-%H%M)"
-              mv -f "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}_old_$(date +%y%m%d-%H%M)"
-            fi
-BACKUPW
             update_mod
 
             if [[ "$?" = "0" ]]; then
               echo "MODs updateis successfully downloaded to ${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
-: << BACKUPTD
-              if [[ -L "${MODS_PATH}" ]]; then
-                rm "${MODS_PATH}"
-                ln -s "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" "${MODS_PATH}"
-                chk_ln_st
-              elif [[ -d "${MODS_PATH}" ]]; then
-                mv -f "${MODS_PATH}" "${MODS_PATH}"_old_$(date +%y%m%d-%H%M)
-                echo -ne "Old MODs directory is moved to ${MODS_PATH}_old_$(date +%y%m%d-%H%M)\n Creating symlink for an updated MOD.\n"
-                ln -s "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" "${MODS_PATH}"
-                chk_ln_st
-              fi
-BACKUPTD
+
               backupmoddir
 
               ln -s "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" "${MODS_PATH}"
-              chk_ln_st
 
-              fixappid "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
-
-              if [[ "${LN_STATUS}" = "0" ]]; then
+              if [[ "$?" = "0" ]]; then
                 echo "\033[37;1;42mMOD is updated. Symbolik link to ${MODS_PATH} is created.\033[0m"
+                fixappid "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
               else
                 echo -ne "\033[37;1;41mWarning!\033[0m Can't create symbolic link to a target MODs directory. Exit.\n"
                 exit 5
@@ -442,20 +391,11 @@ BACKUPTD
     if [[ "$?" = "0" ]]; then
       MOD_NAME=$(get_mod_name)
 
-: << BACKUPTD
-      if [[ -L "${INST_MODS_PATH}/${MOD_NAME}" ]]; then
-        rm "${INST_MODS_PATH}/${MOD_NAME}"
-      elif [[ -d "${INST_MODS_PATH}/${MOD_NAME}" ]]; then
-        mv "${INST_MODS_PATH}/${MOD_NAME}" "${INST_MODS_PATH}/${MOD_NAME}_old_$(date +%y%m%d-%H%M)"
-      fi
-BACKUPTD
-
       backupmoddir
 
       ln -s "${MODS_PATH}" "${INST_MODS_PATH}"/"${MOD_NAME}"
-      chk_ln_st
 
-      if [[ "${LN_STATUS}" = "0" ]]; then
+      if [[ "$?" = "0" ]]; then
         echo -ne "\033[37;1;42mMOD is downloaded. Symbolik link from ${MODS_PATH} to ${INST_MODS_PATH}/${MOD_NAME} is created.\033[0m\n"
       else
         echo -ne "\033[37;1;41mWarning!\033[0m Can't create symbolic link to a target MODs directory. Exit.\n"
