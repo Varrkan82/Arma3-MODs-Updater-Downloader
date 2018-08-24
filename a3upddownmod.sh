@@ -435,31 +435,21 @@ set -x
     MODS_PATH=${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}
     MOD_UP_CMD=+"workshop_download_item ${STMAPPID} ${MOD_ID}"
     echo "${MOD_UP_CMD}"
-    echo ${MODS_PATH}
-    echo "${MODS_PATH}"
 
     download_mod
-    echo ${MODS_PATH}
-    echo "${MODS_PATH}"
+
     fixappid
-    echo ${MODS_PATH}
-    echo "${MODS_PATH}"
+
     # Ask user to create the symbolic link for downloaded MOD to an ArmA 3 Server's mods folder
     echo  "Do you want to symlink the downloaded MOD to your MODs folder in ARMA3Server folder? [y|Y] or [n|N]: "
-    echo ${MODS_PATH}
-    echo "${MODS_PATH}"
 
     simplequery
-    echo ${MODS_PATH}
-    echo "${MODS_PATH}"
 
     if [[ "$?" = "0" ]]; then
       MOD_NAME=$(get_mod_name)
-    echo ${MODS_PATH}
-    echo "${MODS_PATH}"
+
       backupmoddir
-    echo ${MODS_PATH}
-    echo "${MODS_PATH}"
+
       ln -s "${MODS_PATH}" "${INST_MODS_PATH}"/"${MOD_NAME}"
 
       if [[ "$?" = "0" ]]; then
