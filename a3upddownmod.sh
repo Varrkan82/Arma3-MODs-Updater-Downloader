@@ -89,15 +89,15 @@ backupwkshpdir(){
   fi
   if [[ -d "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" ]]; then
     echo "Workshop target directory for MOD ${MOD_NAME} is already present. Moving it to ${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}_old_$(date +%y%m%d-%H%M)"
-    mv -f "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}_old_$(date +%y%m%d-%H%M)"
+    mv -f "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}_old_$(date +%y%m%d-%H%M)" &>/dev/null
   fi
 }
 # Backup current MOD's directory before update (Symbolic link will be removed and re-created)
 backupmoddir(){
   if [[ -L "${INST_MODS_PATH}/${MOD_NAME}" ]]; then
-    rm ${INST_MODS_PATH}/${MOD_NAME}
+    rm ${INST_MODS_PATH}/${MOD_NAME} &>/dev/null
   elif [[ -d "${INST_MODS_PATH}/${MOD_NAME}" ]]; then
-    mv "${INST_MODS_PATH}/${MOD_NAME}" "${INST_MODS_PATH}/${MOD_NAME}_old_$(date +%y%m%d-%H%M)"
+    mv "${INST_MODS_PATH}/${MOD_NAME}" "${INST_MODS_PATH}/${MOD_NAME}_old_$(date +%y%m%d-%H%M)" &>/dev/null
   fi
 }
 # Get original MOD's name from meta.cpp file
@@ -204,7 +204,6 @@ update_mod(){
     exit 1
   else
     echo -e "\n"
-    return 0
   fi
 }
 # Download MOD by its ID
@@ -215,7 +214,6 @@ download_mod(){
     exit 1
   else
     echo -e "\n"
-    return 0
   fi
 }
 
@@ -228,7 +226,7 @@ simplequery(){
         SELECT=true
         ;;
       n | N )
-        SELECT=false
+        SELECT=true
         ;;
       quit )
         echo -ne "\033[37;1;41mWarning!\033[0m Some important changes wasn't made. This could or could not to cause the different problems.\n"
@@ -243,7 +241,7 @@ simplequery(){
 # Fix Steam application ID
 fixappid(){
   if [[ "$?" = "0" ]]; then
-    if [[ -z "$1" ]]; then
+    if [[ "$1" ]]; then
       MODS_PATH="${1}"
     fi
     DMOD_ID=$(get_mod_id)         # Downloaded MODs ID
@@ -426,6 +424,7 @@ case "${ACTION}" in
     ;;
 
   d | D )
+set -x
     # Download section
     authcheck
     echo ""
@@ -433,24 +432,34 @@ case "${ACTION}" in
     read -e -p "Please, enter an Application ID in a Steam WokrShop to dowdnload: " MOD_ID
     echo "Application ID IS: ${MOD_ID}\n"
     echo "Starting to download MOD ID ${MOD_ID}..."
-    MODS_PATH="${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
+    MODS_PATH=${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}
     MOD_UP_CMD=+"workshop_download_item ${STMAPPID} ${MOD_ID}"
     echo "${MOD_UP_CMD}"
+    echo ${MODS_PATH}
+    echo "${MODS_PATH}"
 
     download_mod
-
+    echo ${MODS_PATH}
+    echo "${MODS_PATH}"
     fixappid
-
+    echo ${MODS_PATH}
+    echo "${MODS_PATH}"
     # Ask user to create the symbolic link for downloaded MOD to an ArmA 3 Server's mods folder
     echo  "Do you want to symlink the downloaded MOD to your MODs folder in ARMA3Server folder? [y|Y] or [n|N]: "
+    echo ${MODS_PATH}
+    echo "${MODS_PATH}"
 
     simplequery
+    echo ${MODS_PATH}
+    echo "${MODS_PATH}"
 
     if [[ "$?" = "0" ]]; then
       MOD_NAME=$(get_mod_name)
-
+    echo ${MODS_PATH}
+    echo "${MODS_PATH}"
       backupmoddir
-
+    echo ${MODS_PATH}
+    echo "${MODS_PATH}"
       ln -s "${MODS_PATH}" "${INST_MODS_PATH}"/"${MOD_NAME}"
 
       if [[ "$?" = "0" ]]; then
@@ -476,6 +485,7 @@ case "${ACTION}" in
       echo ""
       exit 0
     fi
+set +x
     ;;
 
   * )
