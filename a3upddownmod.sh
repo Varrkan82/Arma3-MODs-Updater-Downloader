@@ -102,7 +102,6 @@ backupmoddir(){
 }
 # Get original MOD's name from meta.cpp file
 get_mod_name(){
-set -x
   if [[ "$1" ]]; then
     MODS_PATH="$1"
   fi
@@ -112,7 +111,6 @@ set -x
   tr "[:upper:]" "[:lower:]" | \
   sed -E 's/\s{1,}/_/g' | \
   sed 's/^/\@/g'
-set +x
 }
 # Mod's application ID from meta.cpp file
 get_mod_id(){
@@ -174,7 +172,6 @@ checkupdates(){
         TO_UP+="${MOD_NAME} "
         MOD_ID_LIST+="${MOD_ID} "
         echo -en "\033[37;1;42mMod ${MOD_NAME} can be updated.\033[0m\n"
-
         continue
       else
         echo "MOD ${MOD_NAME} is already up to date!"
