@@ -6,6 +6,7 @@ This script is a full interactive. The complete automatic start is planing but n
 ## Script's abilities:
 - Check all installed MODs for updates in a Steam Workshop
 - Update one selected MOD by name
+- Update all MDOs, which are updated in a Steam Workshop in a batch mode.
 - Download MOD by Steam AppID
 - Fix missed Steam AppID in 'meta.cpp' file during updating/downloading process. 
   - REM: To make fixing possible during an Updating process it need to be manually edited once at first time before update of the selected MOD will started. All further updates will fix automatically it again and again.
@@ -24,6 +25,7 @@ This script is a full interactive. The complete automatic start is planing but n
 ## Usage: 
 Run the script and follow an instructions.
 ## Known issues:
+- After the batch updating of a MODs - the Steam AplicationID is brokes again in a some MODs. These MOD's 'meta.cpp' file need to be updated manually again.
 - FIXED: Script can't correctly parse the last update date of a MOD from the Steam WorkShop if it was updated in the past Year or early. (For exapmle, the current year is 2018, but the mod was updated the last time at 2016. So, this situation will generate a message like "date: invalid date ‘24 Aug, 2016 2018’")
 - _**NOT A BUG**_: Some MODs has no an application ID in it's **meta.cpp** file (it's = 0). These MODs can't be updated by this script before editing the **meta.cpp** file. To make it work - just copy the MOD's Steam AppID from the MOD's WorkShop link and replace the "0" here
 ```
@@ -51,4 +53,3 @@ UPD: This could be fixed by re-downloading the MOD with 'publishedid =0;' in **m
 
 ## Plans
 1. Run script with a CLI options to make all jobs automatically
-2. Implement a batch updating of an all installed MODs
