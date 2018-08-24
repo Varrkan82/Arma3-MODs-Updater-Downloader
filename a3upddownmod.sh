@@ -61,6 +61,7 @@ elif [[ ! -f "${CURL_CMD}" ]]; then
 fi
 
 ## Functions
+# Check authorization data for Steam
 authcheck(){
   # Checking for does the Steam login and password are pre-configured?
   if [[ -z "${STEAM_LOGIN}" ]]; then
@@ -83,45 +84,46 @@ authcheck(){
 }
 
 backupwkshpdir(){
-set -x
+  if [[ "$1" ]]; then
+    MOD_NAME="$1"
+  fi
   if [[ -d "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" ]]; then
-echo "$?"
     echo "Workshop target directory for MOD ${MOD_NAME} is already present. Moving it to ${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}_old_$(date +%y%m%d-%H%M)"
     mv -f "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}_old_$(date +%y%m%d-%H%M)"
-echo $?
   fi
-set +x
 }
-
+# Backup current MOD's directory before update (Symbolic link will be removed and re-created)
 backupmoddir(){
-set -x
   if [[ -L "${INST_MODS_PATH}/${MOD_NAME}" ]]; then
-echo "$?"
     rm ${INST_MODS_PATH}/${MOD_NAME}
-echo "$?"
   elif [[ -d "${INST_MODS_PATH}/${MOD_NAME}" ]]; then
-echo "$?"
     mv "${INST_MODS_PATH}/${MOD_NAME}" "${INST_MODS_PATH}/${MOD_NAME}_old_$(date +%y%m%d-%H%M)"
-echo "$?"
   fi
-set +x
 }
-
+# Get original MOD's name from meta.cpp file
 get_mod_name(){
+set -x
+  if [[ "$1" ]]; then
+    MODS_PATH="$1"
+  fi
   grep -h "name" "${MODS_PATH}"/meta.cpp | \
   awk -F'"' '{print $2}' | \
   tr -d "[:punct:]" | \
   tr "[:upper:]" "[:lower:]" | \
   sed -E 's/\s{1,}/_/g' | \
   sed 's/^/\@/g'
+set +x
 }
-
+# Mod's application ID from meta.cpp file
 get_mod_id(){
+  if [[ "$1" ]]; then
+    MODS_PATH="$1"
+  fi
   grep -h "publishedid" "${MODS_PATH}"/meta.cpp | \
   awk '{print $3}' | \
   tr -d [:punct:]
 }
-
+# Get the MOD's last updated date from Steam Workshop
 get_wkshp_date(){
   if [[ "$(${CURL_CMD} ${URL} | grep -m1 "Update:" | wc -w)" = "7" ]]; then
     PRINT="$(${CURL_CMD} ${URL} | grep -m1 "Update:" | tr -d "," | awk '{ print $2" "$3" "$4" "$6 }')"
@@ -139,11 +141,10 @@ countdown(){
     if [[ "$?" = "0" ]]; then
       break
     fi
-#    echo "Press any key to continue without waiting... :)"
     clear
   done
 }
-
+# Check all installed mods for updates in Steam Workshop.
 checkupdates(){
   echo "Checking for updates..."
   # check all installed MODs for updates.
@@ -169,7 +170,7 @@ checkupdates(){
       # Compare update time
       if [[ ${UTIME} -gt ${CTIME} ]]; then
         # Construct the list of MODs to update
-        MOD_UP_CMD+=+"workshop_download_item ${STMAPPID} ${MOD_ID} "
+        MOD_UP_CMD+="+workshop_download_item ${STMAPPID} ${MOD_ID} "
         TO_UP+="${MOD_NAME} "
         MOD_ID_LIST+="${MOD_ID} "
         echo -en "\033[37;1;42mMod ${MOD_NAME} can be updated.\033[0m\n"
@@ -181,26 +182,8 @@ checkupdates(){
       fi
     fi
   done
-  export MOD_ID
-  export MOD_UP_CMD
-  export MOD_ID_LIST
   export TO_UP
-}
-
-update_all(){
-set -x
-  for MOD_NAME in "${TO_UP[@]}"; do
-echo "$MOD_NAME"
-    backupmoddir
-  done
-echo "${MOD_UP_CMD[@]}"
-#  ${STMCMD_PATH}/steamcmd.sh +login ${STEAM_LOGIN} ${STEAM_PASS} "${MOD_UP_CMD[@]}" validate +quit
-  for MOD_ID in "${MOD_ID_LIST[@]}"; do
-    backupwkshpdir
-echo ${WKSHP_PATH}/content/${STMAPPID}/"${MOD_ID}"
-#    find ${WKSHP_PATH}/content/${STMAPPID}/"${MOD_ID}" -depth -exec rename 's/(.*)\/([^\/]*)/$1\/\L$2/' {} \;
-  done
-set -x
+  export MOD_UP_CMD
 }
 
 : << INPROGRESS
@@ -215,7 +198,7 @@ batchfixes(){
   find "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" -depth -exec rename 's/(.*)\/([^\/]*)/$1\/\L$2/' {} \;
 }
 INPROGRESS
-
+# Update single MOD
 update_mod(){
   rm -rf "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
   "${STMCMD_PATH}"/steamcmd.sh +login "${STEAM_LOGIN}" "${STEAM_PASS}" "${MOD_UP_CMD}" validate +quit
@@ -227,7 +210,7 @@ update_mod(){
     return 0
   fi
 }
-
+# Download MOD by its ID
 download_mod(){
   "${STMCMD_PATH}"/steamcmd.sh +login "${STEAM_LOGIN}" "${STEAM_PASS}" "${MOD_UP_CMD}" validate +quit
   if [[ "$?" != "0" ]]; then
@@ -246,14 +229,12 @@ simplequery(){
     case "${ANSWER}" in
       y | Y )
         SELECT=true
-        true
         ;;
       n | N )
-        SELECT=true
-        false
+        SELECT=false
         ;;
       quit )
-        echo "\033[37;1;41mWarning!\033[0m Some important changes wasn't made. This could or not to cause the different problems."
+        echo -ne "\033[37;1;41mWarning!\033[0m Some important changes wasn't made. This could or could not to cause the different problems.\n"
         exit 7
 	      ;;
       * )
@@ -262,13 +243,11 @@ simplequery(){
     esac
   done
 }
-
+# Fix Steam application ID
 fixappid(){
   if [[ "$?" = "0" ]]; then
     if [[ -z "$1" ]]; then
-      GET_ID_PATH="${MODS_PATH}"
-    else
-      GET_ID_PATH="${1}"
+      MODS_PATH="${1}"
     fi
     DMOD_ID=$(get_mod_id)         # Downloaded MODs ID
     DMOD_ID="${DMOD_ID%$'\r'}"
@@ -281,6 +260,38 @@ fixappid(){
     fi
   fi
 }
+# Update all MODs in a batch mode
+update_all(){
+  TMP_NAMES=("${TO_UP[@]}")
+  TMP_IDS=("${MOD_ID_LIST[@]}")
+  for MOD_NAME in ${TMP_NAMES[@]} ; do
+    backupmoddir
+    unset MOD_NAME
+  done
+  for MOD_ID in ${TMP_IDS[@]} ; do
+    backupwkshpdir ${MOD_ID}
+    unset MOD_ID
+  done
+
+  ${STMCMD_PATH}/steamcmd.sh +login ${STEAM_LOGIN} ${STEAM_PASS} ${MOD_UP_CMD[@]} validate +quit
+
+  for MOD_ID in ${TMP_IDS[@]} ; do
+    get_mod_id ${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}
+    find ${WKSHP_PATH}/content/${STMAPPID}/"${MOD_ID}" -depth -exec rename 's/(.*)\/([^\/]*)/$1\/\L$2/' {} \;
+    if [[ "$?" = "0" ]]; then
+      echo "Fixed upper case for MOD ${MOD_NAME}"
+    fi
+
+    MOD_NAME=$(get_mod_name ${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID})
+    ln -s ${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID} ${INST_MODS_PATH}/${MOD_NAME}
+    if [[ "$?" != "0" ]]; then
+      echo "Symlink for MOD "${MOD_NAME}" can not be created."
+    fi
+    unset MOD_ID
+    unset MOD_NAME
+  done
+}
+
 ## End of a functions block
 
 # List installed mods
@@ -311,7 +322,6 @@ case "${ACTION}" in
   u | U )
     clear
     # Ask user to select update mode
-#    echo -ne "How do you want to update? [b|B]-Batch or [s|S]-Single MOD?\n"
 
     read -e -p "How do you want to update? [b|B]-Batch or [s|S]-Single MOD? " UPD_M
     case "${UPD_M}" in
@@ -320,8 +330,8 @@ case "${ACTION}" in
         checkupdates
         # Print MODs which could be updated
         if [[ ! -z "${TO_UP[@]}" ]]; then
-          simplequery
           echo -e "Mods ${TO_UP[@]} can be updated. Do you want to proceed? [y|Y] or [n|N]: "
+          simplequery
 
           if [[ "$?" = "0" ]]; then
             authcheck
