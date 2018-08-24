@@ -424,7 +424,6 @@ case "${ACTION}" in
     ;;
 
   d | D )
-set -x
     # Download section
     authcheck
     echo ""
@@ -475,7 +474,6 @@ set -x
       echo ""
       exit 0
     fi
-set +x
     ;;
 
   * )
