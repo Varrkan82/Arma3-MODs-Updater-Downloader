@@ -290,7 +290,7 @@ update_all(){
 ## End of a functions block
 
 # List installed mods
-INST_MODS_LIST=($(ls -1 "${INST_MODS_PATH}"| grep -v "_old_" ))
+INST_MODS_LIST=($(ls -1 "${INST_MODS_PATH}"| grep -v "_old_" | grep -E "^@"))
 
 clear
 
