@@ -303,7 +303,7 @@ clear
 
 # Ask user for action
 echo -ne "After selecting to 'Update' -> 'Single' - you will see the list of installed MODs.\n\033[37;1;41mPlease, copy the needed name before exiting from the list.\nIt will be unavailabe after exit.\nTo get the list again - you'll need to restart the script\033[0m\n"
-echo -ne "What do you want to do? \n [u|U] - Update MOD \n [c|C] - Check all MODs for updates\n [d|D] - Download MOD?"
+echo -ne "What do you want to do? \n [u|U] - Update MOD \n [c|C] - Check all MODs for updates\n [d|D] - Download MOD?\n"
 echo -ne "Any other selection will cause script to stop.\n"
 
 read -e -p "Make selection please: " ACTION
