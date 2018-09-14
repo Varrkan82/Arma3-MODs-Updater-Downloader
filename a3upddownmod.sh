@@ -105,21 +105,25 @@ get_mod_name(){
   if [[ "$1" ]]; then
     MODS_PATH="$1"
   fi
-  grep -h "name" "${MODS_PATH}"/meta.cpp | \
-  awk -F'"' '{print $2}' | \
-  tr -d "[:punct:]" | \
-  tr "[:upper:]" "[:lower:]" | \
-  sed -E 's/\s{1,}/_/g' | \
-  sed 's/^/\@/g'
+  if [[ -f "${MODS_PATH}"/meta.cpp ]]; then
+    grep -h "name" "${MODS_PATH}"/meta.cpp | \
+    awk -F'"' '{print $2}' | \
+    tr -d "[:punct:]" | \
+    tr "[:upper:]" "[:lower:]" | \
+    sed -E 's/\s{1,}/_/g' | \
+    sed 's/^/\@/g'
+  fi
 }
 # Mod's application ID from meta.cpp file
 get_mod_id(){
   if [[ "$1" ]]; then
     MODS_PATH="$1"
   fi
-  grep -h "publishedid" "${MODS_PATH}"/meta.cpp | \
-  awk '{print $3}' | \
-  tr -d [:punct:]
+  if [[ -f "${MODS_PATH}"/meta.cpp ]]; then
+    grep -h "publishedid" "${MODS_PATH}"/meta.cpp | \
+    awk '{print $3}' | \
+    tr -d [:punct:]
+  fi
 }
 # Get the MOD's last updated date from Steam Workshop
 get_wkshp_date(){
