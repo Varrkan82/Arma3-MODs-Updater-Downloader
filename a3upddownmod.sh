@@ -169,7 +169,7 @@ checkupdates(){
       echo -ne "\033[37;1;41mWrong ID for MOD ${MOD_NAME} in file 'meta.cpp'\033[0m You can update it manually and the next time it will be checked well. \n"
       continue
     elif [[ -z "${MOD_ID}" ]]; then
-      echo -ne "\033[37;1;41mNo 'meta.cpp' file fount for MOD ${MOD_NAME}.\033[0m"
+      echo -ne "\033[37;1;41mNo 'meta.cpp' file found for MOD ${MOD_NAME}.\033[0m\n"
       continue
     else
       # Compare update time
@@ -374,7 +374,7 @@ case "${ACTION}" in
             echo -ne "Find it by the MODs name in a Steam Workshop and update in MODs 'meta.cpp' file or use Download option to get MOD by it's ID. Exiting.\n"
             exit 6
           elif [[ -z "${MOD_ID}" ]]; then
-            echo -ne "\033[37;1;41mNo 'meta.cpp' file fount for MOD ${MOD_NAME}.\033[0m"
+            echo -ne "\033[37;1;41mNo 'meta.cpp' file found for MOD ${MOD_NAME}.\033[0m\n"
             continue
           fi
 
