@@ -105,21 +105,25 @@ get_mod_name(){
   if [[ "$1" ]]; then
     MODS_PATH="$1"
   fi
-  grep -h "name" "${MODS_PATH}"/meta.cpp | \
-  awk -F'"' '{print $2}' | \
-  tr -d "[:punct:]" | \
-  tr "[:upper:]" "[:lower:]" | \
-  sed -E 's/\s{1,}/_/g' | \
-  sed 's/^/\@/g'
+  if [[ -f "${MODS_PATH}"/meta.cpp ]]; then
+    grep -h "name" "${MODS_PATH}"/meta.cpp | \
+    awk -F'"' '{print $2}' | \
+    tr -d "[:punct:]" | \
+    tr "[:upper:]" "[:lower:]" | \
+    sed -E 's/\s{1,}/_/g' | \
+    sed 's/^/\@/g'
+  fi
 }
 # Mod's application ID from meta.cpp file
 get_mod_id(){
   if [[ "$1" ]]; then
     MODS_PATH="$1"
   fi
-  grep -h "publishedid" "${MODS_PATH}"/meta.cpp | \
-  awk '{print $3}' | \
-  tr -d [:punct:]
+  if [[ -f "${MODS_PATH}"/meta.cpp ]]; then
+    grep -h "publishedid" "${MODS_PATH}"/meta.cpp | \
+    awk '{print $3}' | \
+    tr -d [:punct:]
+  fi
 }
 # Get the MOD's last updated date from Steam Workshop
 get_wkshp_date(){
@@ -163,6 +167,9 @@ checkupdates(){
 
     if [[ "${MOD_ID}" = "0" ]]; then
       echo -ne "\033[37;1;41mWrong ID for MOD ${MOD_NAME} in file 'meta.cpp'\033[0m You can update it manually and the next time it will be checked well. \n"
+      continue
+    elif [[ -z "${MOD_ID}" ]]; then
+      echo -ne "\033[37;1;41mNo 'meta.cpp' file found for MOD ${MOD_NAME}.\033[0m\n"
       continue
     else
       # Compare update time
@@ -296,7 +303,7 @@ clear
 
 # Ask user for action
 echo -ne "After selecting to 'Update' -> 'Single' - you will see the list of installed MODs.\n\033[37;1;41mPlease, copy the needed name before exiting from the list.\nIt will be unavailabe after exit.\nTo get the list again - you'll need to restart the script\033[0m\n"
-echo -ne "What do you want to do? \n [u|U] - Update MOD \n [c|C] - Check all MODs for updates\n [d|D] - Download MOD?"
+echo -ne "What do you want to do? \n [u|U] - Update MOD \n [c|C] - Check all MODs for updates\n [d|D] - Download MOD?\n"
 echo -ne "Any other selection will cause script to stop.\n"
 
 read -e -p "Make selection please: " ACTION
@@ -366,6 +373,9 @@ case "${ACTION}" in
             echo -ne "MOD application ID is not configured for mod ${MOD_NAME} in file ${MODS_PATH}/meta.cpp \n"
             echo -ne "Find it by the MODs name in a Steam Workshop and update in MODs 'meta.cpp' file or use Download option to get MOD by it's ID. Exiting.\n"
             exit 6
+          elif [[ -z "${MOD_ID}" ]]; then
+            echo -ne "\033[37;1;41mNo 'meta.cpp' file found for MOD ${MOD_NAME}.\033[0m\n"
+            continue
           fi
 
           URL="${STEAM_CHLOG_URL}/${MOD_ID}"
