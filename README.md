@@ -15,6 +15,8 @@ This script is a full interactive. The complete automatic start is planing but n
 
 ## Dependencies
 - curl
+- wget
+- steamcmd
 
 ## Installation: 
 1. Create the target directory there you want to store the script in the home directory of a userwhich is running an ArmA 3 server
