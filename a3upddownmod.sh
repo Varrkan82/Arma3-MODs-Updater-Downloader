@@ -45,15 +45,16 @@ CURL_CMD="/usr/bin/curl -s"               # CURL command
 STEAM_CHLOG_URL="https://steamcommunity.com/sharedfiles/filedetails/changelog"    # URL to get the date of the last MOD's update in a WorkShop
 # Change it according to your paths
 STMCMD_PATH="/home/steam/arma3server/steamcmd"            # Path to 'steamcmd.sh' file
-INST_MODS_PATH="/home/steam/arma3server/serverfiles/mods"       # Path to ArmA 3 installed MODs in an installed  ArmA 3 server's directory
+# INST_MODS_PATH="/home/steam/arma3server/serverfiles/mods"       # Path to ArmA 3 installed MODs in an installed  ArmA 3 server's directory
 WKSHP_PATH="/home/steam/Steam/steamapps/workshop"         # Path to there is Workshop downloaded the MODs
+
 
 # Optional variables
 STEAM_LOGIN=""                    # Steam login (with a purchased ArmA 3)
 STEAM_PASS=""                   # Steam password
 
 # Check for needed paths and for CURL
-if [[ ! -d "${STMCMD_PATH}" || ! -d "${INST_MODS_PATH}" || ! -d "${WKSHP_PATH}" ]]; then
+if [[ ! -d "${STMCMD_PATH}" || ! -d "${WKSHP_PATH}" ]]; then
   echo "Some path(s) is/(are) missing. Check - does an all paths are correctly setted up! Exit."
   exit 11
 elif [[ ! -f "${CURL_CMD}" ]]; then
@@ -84,12 +85,13 @@ authcheck(){
 }
 
 backupwkshpdir(){
-  if [[ "$1" ]]; then
-    MOD_NAME="$1"
+  if [[ "${MOD_ID}" = "" ]]; then
+    exit 100
   fi
-  if [[ -d "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" ]]; then
-    echo "Workshop target directory for MOD ${MOD_NAME} is already present. Moving it to ${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}_old_$(date +%y%m%d-%H%M)"
-    mv -f "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}_old_$(date +%y%m%d-%H%M)" &>/dev/null
+  FULL_PATH="${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
+  if [[ -d "${FULL_PATH}" ]]; then
+    echo "Workshop target directory for MOD ${MOD_NAME} is already present. Moving it to ${FULL_PATH}_old_$(date +%y%m%d-%H%M)"
+    mv -f "${FULL_PATH}" "${FULL_PATH}_old_$(date +%y%m%d-%H%M)" &>/dev/null
   fi
 }
 # Backup current MOD's directory before update (Symbolic link will be removed and re-created)
@@ -102,11 +104,12 @@ backupmoddir(){
 }
 # Get original MOD's name from meta.cpp file
 get_mod_name(){
-  if [[ "$1" ]]; then
-    MODS_PATH="$1"
+  if [[ "${MOD_ID}" = "" ]]; then
+    exit 100
   fi
-  if [[ -f "${MODS_PATH}"/meta.cpp ]]; then
-    grep -h "name" "${MODS_PATH}"/meta.cpp | \
+  FULL_PATH="${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
+  if [[ -f "${FULL_PATH}"/meta.cpp ]]; then
+    grep -h "name" "${FULL_PATH}"/meta.cpp | \
     awk -F'"' '{print $2}' | \
     tr -d "[:punct:]" | \
     tr "[:upper:]" "[:lower:]" | \
@@ -116,11 +119,12 @@ get_mod_name(){
 }
 # Mod's application ID from meta.cpp file
 get_mod_id(){
-  if [[ "$1" ]]; then
-    MODS_PATH="$1"
+  if [[ "${MOD_ID}" = "" ]]; then
+    exit 100
   fi
-  if [[ -f "${MODS_PATH}"/meta.cpp ]]; then
-    grep -h "publishedid" "${MODS_PATH}"/meta.cpp | \
+  FULL_PATH="${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
+  if [[ -f "${FULL_PATH}"/meta.cpp ]]; then
+    grep -h "publishedid" "${FULL_PATH}"/meta.cpp | \
     awk '{print $3}' | \
     tr -d [:punct:]
   fi
@@ -153,22 +157,27 @@ checkupdates(){
   TO_UP=( )
   MOD_UP_CMD=( )
   MOD_ID_LIST=( )
-  for MOD_NAME in "${INST_MODS_LIST[@]}"; do
-    MODS_PATH="${INST_MODS_PATH}/${MOD_NAME}"
-    MOD_ID=$(get_mod_id)
+  for MODs_NAME in $(ls -1 ${WKSHP_PATH}/content/${STMAPPID} | grep -v "old"); do
+    MOD_ID=$(grep "publishedid" ${WKSHP_PATH}/content/${STMAPPID}/${MODs_NAME}/meta.cpp | awk -F"=" '{ print $2 }' | tr -d [:blank:] | tr -d [:space:] | tr -d ";$")
     MOD_ID="${MOD_ID%$'\r'}"
     URL="${STEAM_CHLOG_URL}/${MOD_ID}"
     URL="${URL%$'\r'}"
+    MOD_NAME=$(grep "name" ${WKSHP_PATH}/content/${STMAPPID}/${MODs_NAME}/meta.cpp | awk -F"=" '{ print $2 }' | sed 's/\s/_/g' | tr -d ";$")
+    if [[ "${MOD_ID}" = "" ]]; then
+      exit 100
+    fi
+    FULL_PATH="${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
 
     get_wkshp_date
 
     UTIME=$(date --date="${WKSHP_UP_ST}" +%s)
-    CTIME=$(date --date="$(stat ${MODS_PATH} | grep Modify | cut -d" " -f2-)" +%s ) 				#Fix for MC syntax hilighting #"
+    echo ${FULL_PATH}
+    CTIME=$(date --date="$(stat ${FULL_PATH} | grep Modify | cut -d" " -f2-)" +%s ) 				#Fix for MC syntax hilighting #"
 
     if [[ "${MOD_ID}" = "0" ]]; then
       echo -ne "\033[37;1;41mWrong ID for MOD ${MOD_NAME} in file 'meta.cpp'\033[0m You can update it manually and the next time it will be checked well. \n"
       continue
-    elif [[ -z "${MOD_ID}" ]]; then
+    elif [[ ! -f "${WKSHP_PATH}/content/${STMAPPID}/${MODs_NAME}/meta.cpp" ]]; then
       echo -ne "\033[37;1;41mNo 'meta.cpp' file found for MOD ${MOD_NAME}.\033[0m\n"
       continue
     else
@@ -199,12 +208,16 @@ batchfixes(){
     OLD_WKSHP_PATH=($(find ${WKSHP_PATH}/content/${STMAPPID} -type d -name "*_old_*"))
     OLD_TARGET_PATH=($(find ${INST_MODS_PATH} -type d -name "*_old_*"))
     fixappid
-  find "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" -depth -exec rename 's/(.*)\/([^\/]*)/$1\/\L$2/' {} \;
+  find "${FULL_PATH}" -depth -exec rename 's/(.*)\/([^\/]*)/$1\/\L$2/' {} \;
 }
 INPROGRESS
 # Update single MOD
 update_mod(){
-  rm -rf "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
+  if [[ "${MOD_ID}" = "" ]]; then
+    exit 100
+  fi
+  FULL_PATH="${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
+  rm -rf "${FULL_PATH}"
   "${STMCMD_PATH}"/steamcmd.sh +login "${STEAM_LOGIN}" "${STEAM_PASS}" "${MOD_UP_CMD}" validate +quit
   if [[ "$?" != "0" ]]; then
     echo -ne "Unknown error while downloading from Steam Workshop. Exiting.\n"
@@ -234,6 +247,7 @@ simplequery(){
         ;;
       n | N )
         SELECT=true
+	return 1
         ;;
       quit )
         echo -ne "\033[37;1;41mWarning!\033[0m Some important changes wasn't made. This could or could not to cause the different problems.\n"
@@ -247,15 +261,16 @@ simplequery(){
 }
 # Fix Steam application ID
 fixappid(){
+  if [[ -z "$MOD_ID" ]]; then
+    exit 100
+  fi
+  FULL_PATH="${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
   if [[ "$?" = "0" ]]; then
-    if [[ "$1" ]]; then
-      MODS_PATH="${1}"
-    fi
     DMOD_ID=$(get_mod_id)         # Downloaded MODs ID
     DMOD_ID="${DMOD_ID%$'\r'}"
     if [[ "${DMOD_ID}" = "0" ]]; then
       echo "Steam ApplicationID is 0. Will try to fix."
-      sed -i 's/^publishedid.*$/publishedid \= '${MOD_ID}'\;/' "${MODS_PATH}"/meta.cpp
+      sed -i 's/^publishedid.*$/publishedid \= '${MOD_ID}'\;/' "${FULL_PATH}"/meta.cpp
       if [[ "$?" = "0" ]]; then
         echo "Steam ApplicationID is fixed."
       fi
@@ -266,10 +281,6 @@ fixappid(){
 update_all(){
   TMP_NAMES=("${TO_UP[@]}")
   TMP_IDS=("${MOD_ID_LIST[@]}")
-  for MOD_NAME in ${TMP_NAMES[@]} ; do
-    backupmoddir
-    unset MOD_NAME
-  done
   for MOD_ID in ${TMP_IDS[@]} ; do
     backupwkshpdir ${MOD_ID}
     unset MOD_ID
@@ -278,14 +289,18 @@ update_all(){
   ${STMCMD_PATH}/steamcmd.sh +login ${STEAM_LOGIN} ${STEAM_PASS} ${MOD_UP_CMD[@]} validate +quit
 
   for MOD_ID in ${TMP_IDS[@]} ; do
-    get_mod_id ${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}
-    find ${WKSHP_PATH}/content/${STMAPPID}/"${MOD_ID}" -depth -exec rename 's/(.*)\/([^\/]*)/$1\/\L$2/' {} \;
+    get_mod_id
+    if [[ -z "$MOD_ID" ]]; then
+      exit 100
+    fi
+    FULL_PATH="${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
+    find ${FULL_PATH} -depth -exec rename 's/(.*)\/([^\/]*)/$1\/\L$2/' {} \;
     if [[ "$?" = "0" ]]; then
       echo "Fixed upper case for MOD ${MOD_NAME}"
     fi
 
-    MOD_NAME=$(get_mod_name ${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID})
-    ln -s ${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID} ${INST_MODS_PATH}/${MOD_NAME}
+    MOD_NAME=$(get_mod_name)
+    ln -s ${FULL_PATH} ${INST_MODS_PATH}/${MOD_NAME}
     if [[ "$?" != "0" ]]; then
       echo "Symlink for MOD "${MOD_NAME}" can not be created."
     fi
@@ -297,12 +312,12 @@ update_all(){
 ## End of a functions block
 
 # List installed mods
-INST_MODS_LIST=($(ls -1 "${INST_MODS_PATH}"| grep -v "_old_" | grep -E "^@"))
+INST_MODS_LIST=($(ls -1 "${WKSHP_PATH}/content/${STMAPPID}"| grep -v "_old_"))
 
 clear
 
 # Ask user for action
-echo -ne "After selecting to 'Update' -> 'Single' - you will see the list of installed MODs.\n\033[37;1;41mPlease, copy the needed name before exiting from the list.\nIt will be unavailabe after exit.\nTo get the list again - you'll need to restart the script\033[0m\n"
+echo -ne "After selecting to 'Update' -> 'Single' - you will see the list of installed MODs.\n\033[37;1;41mPlease, copy the needed \"publishedid\" before exiting from the list.\nIt will be unavailabe after exit.\nTo get the list again - you'll need to restart the script\033[0m\n"
 echo -ne "What do you want to do? \n [u|U] - Update MOD \n [c|C] - Check all MODs for updates\n [d|D] - Download MOD?\n"
 echo -ne "Any other selection will cause script to stop.\n"
 
@@ -352,25 +367,28 @@ case "${ACTION}" in
 
         countdown
 
-        echo -ne "$(ls ${INST_MODS_PATH})\n" | less
-        echo -ne "Please, specify MOD's name (with '@' symbol in the begining too).\n"
+        echo -ne "$(grep -A1 "publishedid" ${WKSHP_PATH}/content/${STMAPPID}/*/meta.cpp)\n" | less
+        echo -ne "Please, specify MOD's ID.\n"
         # Ask user to enter a MOD's name to update
-        echo -ne "You have installed a MODs listed above. Please, enter the MODs name to update:\n"
-        read -er MOD_NAME
+        echo -ne "You have installed a MODs listed above. Please, enter the MODs ID to update:\n"
+	unset MOD_ID
+	unset FULL_PATH
+        read -er MOD_ID
 
-	      echo "Starting to update MOD ${MOD_NAME}..."
         # Check syntax
-        if [[ "${MOD_NAME}" != @* && "${MOD_NAME}" != "" ]]; then
-          echo -ne "Wrong MOD's name! Exiting!\n"
+	DIGITS="^[0-9]+$"
+        if ! [[ "${MOD_ID}" =~ ${DIGITS} ]] && [[ "${MOD_ID}" = "" ]]; then
+          echo -ne "Wrong MOD's ID! Exiting!\n"
           exit 4
         else
           # Update the single selected MOD
-          MODS_PATH="${INST_MODS_PATH}/${MOD_NAME}"
-          MOD_ID=$(get_mod_id)
           MOD_ID="${MOD_ID%$'\r'}"
+	  MODS_PATH="${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
+	  MOD_NAME=$(get_mod_name)
+	  echo "Starting to update MOD ${MOD_NAME}..."
 
           if [[ "${MOD_ID}" = "0" ]]; then
-            echo -ne "MOD application ID is not configured for mod ${MOD_NAME} in file ${MODS_PATH}/meta.cpp \n"
+            echo -ne "MOD application ID is not configured for mod ${MOD_NAME} in file ${FULL_PATH}/meta.cpp \n"
             echo -ne "Find it by the MODs name in a Steam Workshop and update in MODs 'meta.cpp' file or use Download option to get MOD by it's ID. Exiting.\n"
             exit 6
           elif [[ -z "${MOD_ID}" ]]; then
@@ -393,19 +411,10 @@ case "${ACTION}" in
             update_mod
 
             if [[ "$?" = "0" ]]; then
-              echo "MODs updateis successfully downloaded to ${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
+              echo "MODs updateis successfully downloaded to ${FULL_PATH}"
 
               backupmoddir
-
-              ln -s "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" "${MODS_PATH}"
-
-              if [[ "$?" = "0" ]]; then
-                echo "\033[37;1;42mMOD is updated. Symbolik link to ${MODS_PATH} is created.\033[0m"
-                fixappid "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
-              else
-                echo -ne "\033[37;1;41mWarning!\033[0m Can't create symbolic link to a target MODs directory. Exit.\n"
-                exit 5
-              fi
+              fixappid "${FULL_PATH}"
 
               # Ask user to transform the names from upper to lower case
               echo "Do you want to transform all files and directories names from UPPER to LOWER case?"
@@ -413,7 +422,7 @@ case "${ACTION}" in
               simplequery
 
               if [[ "$?" = "0" ]]; then
-                find "${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}" -depth -exec rename 's/(.*)\/([^\/]*)/$1\/\L$2/' {} \;
+                find "${FULL_PATH}" -depth -exec rename 's/(.*)\/([^\/]*)/$1\/\L$2/' {} \;
                 exit 0
               elif [[ "$?" = "1" ]]; then
                 echo -ne "\033[37;1;41mWarning!\033[0m You're selected to DO NOT transform the Upper case letters in a MOD's directory and file name.\n It could cause the probles connecting the MOD to ArmA 3.\n"
@@ -421,7 +430,7 @@ case "${ACTION}" in
 
             fi
           else
-            echo -ne "\033[37;1;42mMOD ${MOD_NAME} is already up to date.\033[37;1;42m\n"
+            echo -ne "\033[37;1;42mMOD ${MOD_NAME} is already up to date.\033[0m \n"
             exit 0
           fi
         fi
@@ -441,7 +450,7 @@ case "${ACTION}" in
     read -e -p "Please, enter an Application ID in a Steam WokrShop to dowdnload: " MOD_ID
     echo "Application ID IS: ${MOD_ID}\n"
     echo "Starting to download MOD ID ${MOD_ID}..."
-    MODS_PATH=${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}
+    MODS_PATH=${FULL_PATH}
     MOD_UP_CMD=+"workshop_download_item ${STMAPPID} ${MOD_ID}"
     echo "${MOD_UP_CMD}"
 
@@ -449,35 +458,13 @@ case "${ACTION}" in
 
     fixappid
 
-    # Ask user to create the symbolic link for downloaded MOD to an ArmA 3 Server's mods folder
-    echo  "Do you want to symlink the downloaded MOD to your MODs folder in ARMA3Server folder? [y|Y] or [n|N]: "
-
-    simplequery
-
-    if [[ "$?" = "0" ]]; then
-      MOD_NAME=$(get_mod_name)
-
-      backupmoddir
-
-      ln -s "${MODS_PATH}" "${INST_MODS_PATH}"/"${MOD_NAME}"
-
-      if [[ "$?" = "0" ]]; then
-        echo -ne "\033[37;1;42mMOD is downloaded. Symbolik link from ${MODS_PATH} to ${INST_MODS_PATH}/${MOD_NAME} is created.\033[0m\n"
-      else
-        echo -ne "\033[37;1;41mWarning!\033[0m Can't create symbolic link to a target MODs directory. Exit.\n"
-        exit 5
-      fi
-    elif [[ "$?" = "1" ]]; then
-      echo -ne "Done! Symbolic link not created!\n"
-    fi
-
     # Ask user to transform the names from upper to lower case
     echo -ne "Do you want to transform all file's and directories names from UPPER to LOWER case?\n"
 
     simplequery
 
     if [[ "$?" = "0" ]]; then
-      find "${MODS_PATH}" -depth -exec rename 's/(.*)\/([^\/]*)/$1\/\L$2/' {} \;
+      find "${FULL_PATH}" -depth -exec rename 's/(.*)\/([^\/]*)/$1\/\L$2/' {} \;
       exit 0
     elif [[ "$?" = "1" ]]; then
       echo -ne "\033[37;1;41mWarning!\033[0m You're selected to DO NOT transform the Upper case letters in a MOD's directory and file name.\n It could cause the probles with connecting the MOD to ArmA 3.\n"
