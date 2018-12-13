@@ -44,7 +44,7 @@ CURRYEAR=$(date +%Y)                  # Current year
 CURL_CMD="/usr/bin/curl -s"               # CURL command
 STEAM_CHLOG_URL="https://steamcommunity.com/sharedfiles/filedetails/changelog"    # URL to get the date of the last MOD's update in a WorkShop
 # Change it according to your paths
-STMCMD_PATH="/home/steam/arma3server/steamcmd"            # Path to 'steamcmd.sh' file
+STMCMD_PATH="/home/steam/arma3server_DRO/steamcmd"            # Path to 'steamcmd.sh' file
 # INST_MODS_PATH="/home/steam/arma3server/serverfiles/mods"       # Path to ArmA 3 installed MODs in an installed  ArmA 3 server's directory
 WKSHP_PATH="/home/steam/Steam/steamapps/workshop"         # Path to there is Workshop downloaded the MODs
 
@@ -94,14 +94,7 @@ backupwkshpdir(){
     mv -f "${FULL_PATH}" "${FULL_PATH}_old_$(date +%y%m%d-%H%M)" &>/dev/null
   fi
 }
-# Backup current MOD's directory before update (Symbolic link will be removed and re-created)
-backupmoddir(){
-  if [[ -L "${INST_MODS_PATH}/${MOD_NAME}" ]]; then
-    rm ${INST_MODS_PATH}/${MOD_NAME} &>/dev/null
-  elif [[ -d "${INST_MODS_PATH}/${MOD_NAME}" ]]; then
-    mv "${INST_MODS_PATH}/${MOD_NAME}" "${INST_MODS_PATH}/${MOD_NAME}_old_$(date +%y%m%d-%H%M)" &>/dev/null
-  fi
-}
+
 # Get original MOD's name from meta.cpp file
 get_mod_name(){
   if [[ "${MOD_ID}" = "" ]]; then
@@ -117,6 +110,7 @@ get_mod_name(){
     sed 's/^/\@/g'
   fi
 }
+
 # Mod's application ID from meta.cpp file
 get_mod_id(){
   if [[ "${MOD_ID}" = "" ]]; then
@@ -129,6 +123,7 @@ get_mod_id(){
     tr -d [:punct:]
   fi
 }
+
 # Get the MOD's last updated date from Steam Workshop
 get_wkshp_date(){
   if [[ "$(${CURL_CMD} ${URL} | grep -m1 "Update:" | wc -w)" = "7" ]]; then
@@ -157,7 +152,7 @@ checkupdates(){
   TO_UP=( )
   MOD_UP_CMD=( )
   MOD_ID_LIST=( )
-  for MODs_NAME in $(ls -1 ${WKSHP_PATH}/content/${STMAPPID} | grep -v "old"); do
+  for MODs_NAME in $(ls -1 ${WKSHP_PATH}/content/${STMAPPID} | grep -v "*old*"); do
     MOD_ID=$(grep "publishedid" ${WKSHP_PATH}/content/${STMAPPID}/${MODs_NAME}/meta.cpp | awk -F"=" '{ print $2 }' | tr -d [:blank:] | tr -d [:space:] | tr -d ";$")
     MOD_ID="${MOD_ID%$'\r'}"
     URL="${STEAM_CHLOG_URL}/${MOD_ID}"
@@ -299,11 +294,6 @@ update_all(){
       echo "Fixed upper case for MOD ${MOD_NAME}"
     fi
 
-    MOD_NAME=$(get_mod_name)
-    ln -s ${FULL_PATH} ${INST_MODS_PATH}/${MOD_NAME}
-    if [[ "$?" != "0" ]]; then
-      echo "Symlink for MOD "${MOD_NAME}" can not be created."
-    fi
     unset MOD_ID
     unset MOD_NAME
   done
@@ -367,7 +357,7 @@ case "${ACTION}" in
 
         countdown
 
-        echo -ne "$(grep -A1 "publishedid" ${WKSHP_PATH}/content/${STMAPPID}/*/meta.cpp)\n" | less
+        echo -ne "$(grep -hr -A1 'publishedid' --include=meta.cpp -E --exclude-dir='*_old_*' ${WKSHP_PATH}/content/${STMAPPID})\n" | less
         echo -ne "Please, specify MOD's ID.\n"
         # Ask user to enter a MOD's name to update
         echo -ne "You have installed a MODs listed above. Please, enter the MODs ID to update:\n"
@@ -413,7 +403,6 @@ case "${ACTION}" in
             if [[ "$?" = "0" ]]; then
               echo "MODs updateis successfully downloaded to ${FULL_PATH}"
 
-              backupmoddir
               fixappid "${FULL_PATH}"
 
               # Ask user to transform the names from upper to lower case
@@ -457,6 +446,28 @@ case "${ACTION}" in
     download_mod
 
     fixappid
+
+    # Ask user to create the symbolic link for downloaded MOD to an ArmA 3 Server's mods folder
+#    echo  "Do you want to symlink the downloaded MOD to your MODs folder in ARMA3Server folder? [y|Y] or [n|N]: "
+
+#    simplequery
+
+#    if [[ "$?" = "0" ]]; then
+#      MOD_NAME=$(get_mod_name)
+#
+#      backupmoddir
+#
+#      ln -s "${MODS_PATH}" "${INST_MODS_PATH}"/"${MOD_NAME}"
+#
+#      if [[ "$?" = "0" ]]; then
+#        echo -ne "\033[37;1;42mMOD is downloaded. Symbolik link from ${MODS_PATH} to ${INST_MODS_PATH}/${MOD_NAME} is created.\033[0m\n"
+#      else
+#        echo -ne "\033[37;1;41mWarning!\033[0m Can't create symbolic link to a target MODs directory. Exit.\n"
+#        exit 5
+#      fi
+#    elif [[ "$?" = "1" ]]; then
+#      echo -ne "Done! Symbolic link not created!\n"
+#    fi
 
     # Ask user to transform the names from upper to lower case
     echo -ne "Do you want to transform all file's and directories names from UPPER to LOWER case?\n"
