@@ -447,28 +447,6 @@ case "${ACTION}" in
 
     fixappid
 
-    # Ask user to create the symbolic link for downloaded MOD to an ArmA 3 Server's mods folder
-#    echo  "Do you want to symlink the downloaded MOD to your MODs folder in ARMA3Server folder? [y|Y] or [n|N]: "
-
-#    simplequery
-
-#    if [[ "$?" = "0" ]]; then
-#      MOD_NAME=$(get_mod_name)
-#
-#      backupmoddir
-#
-#      ln -s "${MODS_PATH}" "${INST_MODS_PATH}"/"${MOD_NAME}"
-#
-#      if [[ "$?" = "0" ]]; then
-#        echo -ne "\033[37;1;42mMOD is downloaded. Symbolik link from ${MODS_PATH} to ${INST_MODS_PATH}/${MOD_NAME} is created.\033[0m\n"
-#      else
-#        echo -ne "\033[37;1;41mWarning!\033[0m Can't create symbolic link to a target MODs directory. Exit.\n"
-#        exit 5
-#      fi
-#    elif [[ "$?" = "1" ]]; then
-#      echo -ne "Done! Symbolic link not created!\n"
-#    fi
-
     # Ask user to transform the names from upper to lower case
     echo -ne "Do you want to transform all file's and directories names from UPPER to LOWER case?\n"
 
