@@ -29,7 +29,7 @@ This script is a full interactive. The complete automatic start is planing but n
 Run the script and follow an instructions.
 ## Known issues:
 - After the batch updating of a MODs - the Steam AplicationID is brokes again in a some MODs. These MOD's 'meta.cpp' file need to be updated manually again.
-- _**NOT A BUG**_: Some MODs has no an application ID in it's **meta.cpp** file (it's = 0). These MODs can't be updated by this script before editing the **meta.cpp** file. To make it work - just copy the MOD's Steam AppID from the MOD's WorkShop link and replace the "0" here
+- _**NOT A BUG**_: Some MODs has no an application ID in its **meta.cpp** file (it's = 0). These MODs can't be updated by this script before editing the **meta.cpp** file. To make it work - just copy the MOD's Steam AppID from the MOD's WorkShop link and replace the "0" here
 ```
 publishedid = 0;
 ```

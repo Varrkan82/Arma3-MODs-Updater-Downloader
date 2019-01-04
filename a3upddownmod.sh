@@ -48,10 +48,13 @@ STMCMD_PATH="/home/steam/arma3server_DRO/steamcmd"            # Path to 'steamcm
 # INST_MODS_PATH="/home/steam/arma3server/serverfiles/mods"       # Path to ArmA 3 installed MODs in an installed  ArmA 3 server's directory
 WKSHP_PATH="/home/steam/Steam/steamapps/workshop"         # Path to there is Workshop downloaded the MODs
 
-
+if [[ ! -f ../auth.sh ]]; then
 # Optional variables
-STEAM_LOGIN=""                    # Steam login (with a purchased ArmA 3)
-STEAM_PASS=""                   # Steam password
+    STEAM_LOGIN=""                    # Steam login (with a purchased ArmA 3)
+    STEAM_PASS=""                   # Steam password
+  else
+    source ../auth.sh
+fi
 
 # Check for needed paths and for CURL
 if [[ ! -d "${STMCMD_PATH}" || ! -d "${WKSHP_PATH}" ]]; then
@@ -145,6 +148,16 @@ countdown(){
     clear
   done
 }
+
+
+fixuppercase() {
+    find ${FULL_PATH} -depth -exec rename 's/(.*)\/([^\/]*)/$1\/\L$2/' {} \;
+    if [[ "$?" = "0" ]]; then
+      echo "Fixed upper case for MOD ${MOD_NAME}"
+    fi
+
+}
+
 # Check all installed mods for updates in Steam Workshop.
 checkupdates(){
   echo "Checking for updates..."
@@ -152,7 +165,7 @@ checkupdates(){
   TO_UP=( )
   MOD_UP_CMD=( )
   MOD_ID_LIST=( )
-  for MODs_NAME in $(ls -1 ${WKSHP_PATH}/content/${STMAPPID} | grep -v "*old*"); do
+  for MODs_NAME in $(ls -1 ${WKSHP_PATH}/content/${STMAPPID} | grep -v -E "*old*"); do
     MOD_ID=$(grep "publishedid" ${WKSHP_PATH}/content/${STMAPPID}/${MODs_NAME}/meta.cpp | awk -F"=" '{ print $2 }' | tr -d [:blank:] | tr -d [:space:] | tr -d ";$")
     MOD_ID="${MOD_ID%$'\r'}"
     URL="${STEAM_CHLOG_URL}/${MOD_ID}"
@@ -194,18 +207,18 @@ checkupdates(){
   export MOD_UP_CMD
 }
 
-: << INPROGRESS
-batchfixes(){
-  for MOD_NAME in "${INST_MODS_LIST[@]}"; do
-    MODS_PATH="${INST_MODS_PATH}/${MOD_NAME}"
-    MOD_ID=$(get_mod_id)
-    MOD_ID="${MOD_ID%$'\r'}"
-    OLD_WKSHP_PATH=($(find ${WKSHP_PATH}/content/${STMAPPID} -type d -name "*_old_*"))
-    OLD_TARGET_PATH=($(find ${INST_MODS_PATH} -type d -name "*_old_*"))
-    fixappid
-  find "${FULL_PATH}" -depth -exec rename 's/(.*)\/([^\/]*)/$1\/\L$2/' {} \;
+# Download MOD by its ID
+download_mod(){
+  until "${STMCMD_PATH}"/steamcmd.sh +login "${STEAM_LOGIN}" "${STEAM_PASS}" "${MOD_UP_CMD}" validate +quit; do
+    echo "Retrying after error while downloading."
+    sleep 3
+  done
+
+  fixuppercase
+
+  echo -e "\n"
 }
-INPROGRESS
+
 # Update single MOD
 update_mod(){
   if [[ "${MOD_ID}" = "" ]]; then
@@ -213,23 +226,9 @@ update_mod(){
   fi
   FULL_PATH="${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
   rm -rf "${FULL_PATH}"
-  "${STMCMD_PATH}"/steamcmd.sh +login "${STEAM_LOGIN}" "${STEAM_PASS}" "${MOD_UP_CMD}" validate +quit
-  if [[ "$?" != "0" ]]; then
-    echo -ne "Unknown error while downloading from Steam Workshop. Exiting.\n"
-    exit 1
-  else
-    echo -e "\n"
-  fi
-}
-# Download MOD by its ID
-download_mod(){
-  "${STMCMD_PATH}"/steamcmd.sh +login "${STEAM_LOGIN}" "${STEAM_PASS}" "${MOD_UP_CMD}" validate +quit
-  if [[ "$?" != "0" ]]; then
-    echo "Unknown error while downloading from Steam Workshop. Exiting."
-    exit 1
-  else
-    echo -e "\n"
-  fi
+
+  download_mod
+  fixuppercase
 }
 
 simplequery(){
@@ -277,27 +276,28 @@ update_all(){
   TMP_NAMES=("${TO_UP[@]}")
   TMP_IDS=("${MOD_ID_LIST[@]}")
   for MOD_ID in ${TMP_IDS[@]} ; do
+    if [[ -z "$MOD_ID" ]]; then
+      exit 100
+    fi
     backupwkshpdir ${MOD_ID}
-    unset MOD_ID
-  done
+    MOD_UP_CMD="+workshop_download_item ${STMAPPID} ${MOD_ID} "
+    rm ${STMCMD_PATH}/appworkshop_${STMAPPID}.acf
 
-  ${STMCMD_PATH}/steamcmd.sh +login ${STEAM_LOGIN} ${STEAM_PASS} ${MOD_UP_CMD[@]} validate +quit
-
-  for MOD_ID in ${TMP_IDS[@]} ; do
+    download_mod
     get_mod_id
+
     if [[ -z "$MOD_ID" ]]; then
       exit 100
     fi
     FULL_PATH="${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
-    find ${FULL_PATH} -depth -exec rename 's/(.*)\/([^\/]*)/$1\/\L$2/' {} \;
-    if [[ "$?" = "0" ]]; then
-      echo "Fixed upper case for MOD ${MOD_NAME}"
-    fi
+
+    fixuppercase
 
     unset MOD_ID
     unset MOD_NAME
   done
 }
+
 
 ## End of a functions block
 
@@ -342,10 +342,11 @@ case "${ACTION}" in
 
           if [[ "$?" = "0" ]]; then
             authcheck
-            update_all
           else
             exit 7
           fi
+
+	  update_all
 
         else
           echo "All MODs are up to date. Exiting."
