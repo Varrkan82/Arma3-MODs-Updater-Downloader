@@ -10,7 +10,6 @@ This script is a full interactive. The complete automatic start is planing but n
 - Download MOD by Steam AppID
 - Fix missed Steam AppID in 'meta.cpp' file during updating/downloading process. 
   - REM: To make fixing possible during an Updating process it need to be manually edited once at first time before update of the selected MOD will started. All further updates will fix automatically it again and again.
-- Create symlinks for Updated/Downloaded MODs
 - Transform the files and directories names from UPPER to LOWER case
 
 ## Dependecies
@@ -21,6 +20,16 @@ This script is a full interactive. The complete automatic start is planing but n
 2. Set up the permissions to execute it for user.
 3. Update paths to installed ArmA 3 Linux Server 'mods', to the Workshop directry, where steam downlading the modes and to the Steam WorkShop where the 'steamcmd.sh is located.
 4. OPTIONAL: Add your Steam login and password to variables 'STEAM_LOGIN' and 'STEAM_PASS'
+4a. You can create an external file aht.sh in the same folder an to store your Steam credentials there. The password should be encrypted with a base64 encryption.
+
+To create your own auth.sh file make the followed (Enter your own Steam credentials before executing!):
+
+```
+echo '#!/bin/bash' > auth.sh && echo "" >> auth.sh
+echo "STEAM_LOGIN=\"YOUR_STEAM_LOGIN\"" >> auth.sh
+echo "STEAM_PASS=\"$(echo "YOUR_STEAM_PASSWORD" | base64)\"" >> auth.sh
+```
+
 
 ## Usage: 
 Run the script and follow an instructions.
