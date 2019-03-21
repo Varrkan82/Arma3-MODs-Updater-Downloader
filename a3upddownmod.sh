@@ -289,6 +289,7 @@ update_all(){
     rm ${STMCMD_PATH}/appworkshop_${STMAPPID}.acf
 
     download_mod
+
     fixuppercase
 
     unset MOD_ID
@@ -298,11 +299,6 @@ update_all(){
 
 
 ## End of a functions block
-
-# List installed mods
-#INST_MODS_LIST=($(ls -1 "${WKSHP_PATH}/content/${STMAPPID}"| grep -v "_old_"))
-
-#clear
 
 # Ask user for action
 echo -ne "After selecting to 'Update' -> 'Single' - you will see the list of installed MODs.\n\033[37;1;41mPlease, copy the needed \"publishedid\" before exiting from the list.\nIt will be unavailabe after exit.\nTo get the list again - you'll need to restart the script\033[0m\n"
