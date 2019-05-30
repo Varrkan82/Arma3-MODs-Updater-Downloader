@@ -21,8 +21,7 @@ This script is a full interactive. The complete automatic start is planing but n
 1. Clone or download this script to the **/home** directory of a user which is running an ArmA 3 server.
 2. Set up the permissions to execute it for user.
 3. Update paths to installed ArmA 3 Linux Server 'mods', to the Workshop directry, where steam downlading the modes and to the Steam WorkShop where the 'steamcmd.sh is located.
-4. OPTIONAL: Add your Steam login and password to variables 'STEAM_LOGIN' and 'STEAM_PASS'
-5. OPTIONAL: You can create an external file aht.sh in the same folder an to store your Steam credentials there. The password should be encrypted with a base64 encryption.
+4. OPTIONAL: You can create an external file auht.sh in the same folder and store your Steam credentials there. The password should be encrypted with a base64 encryption.
 
 To create your own auth.sh file make the followed (Enter your own Steam credentials before executing!):
 
