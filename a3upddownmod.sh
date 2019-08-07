@@ -53,7 +53,7 @@ if [[ ! -f ../auth.sh ]]; then
     STEAM_LOGIN=""                    # Steam login (with a purchased ArmA 3)
     STEAM_PASS=""                   # Steam password
   else
-    source ./auth.sh
+    source ../auth.sh
     STEAM_PASS="$(echo ${STEAM_PASS} | base64 -d)"
 fi
 
