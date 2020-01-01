@@ -16,10 +16,7 @@ This script is a full interactive. The complete automatic start is planing but n
 - curl
 - wget
 - steamcmd
-<<<<<<< HEAD
 - rename
-=======
->>>>>>> bf1acc3fd1e0443aba47797de3b336ec3d5b0b58
 
 ## Intstallation: 
 1. Clone or download this script to the **/home** directory of a user which is running an ArmA 3 server.
