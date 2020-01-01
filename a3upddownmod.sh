@@ -46,7 +46,9 @@ CURRYEAR=$(date +%Y)                  # Current year
 CURL_CMD="/usr/bin/curl"               # CURL command
 STEAM_CHLOG_URL="https://steamcommunity.com/sharedfiles/filedetails/changelog"    # URL to get the date of the last MOD's update in a WorkShop
 # Change it according to your paths
+
 STMCMD_PATH="/home/steam/server/steamcmd"            # Path to 'steamcmd.sh' file
+
 # INST_MODS_PATH="/home/steam/arma3server/serverfiles/mods"       # Path to ArmA 3 installed MODs in an installed  ArmA 3 server's directory
 WKSHP_PATH="/home/steam/Steam/steamapps/workshop"         # Path to there is Workshop downloaded the MODs
 
@@ -59,6 +61,7 @@ if [[ ! -f ../auth.sh ]]; then
     if [[ $- =~ x ]]; then debug=1; set +x; fi
     STEAM_PASS="$(echo ${STEAM_PASS} | base64 -d)"
     [[ $debug == 1 ]] && set -x
+
 fi
 
 # Check for needed paths and for CURL
