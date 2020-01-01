@@ -6,27 +6,37 @@ This script is a full interactive. The complete automatic start is planing but n
 ## Script's abilities:
 - Check all installed MODs for updates in a Steam Workshop
 - Update one selected MOD by name
-- Update all MDOs, which are updated in a Steam Workshop in a batch mode.
+- Update all MODs, which are updated in a Steam Workshop in a batch mode.
 - Download MOD by Steam AppID
 - Fix missed Steam AppID in 'meta.cpp' file during updating/downloading process. 
   - REM: To make fixing possible during an Updating process it need to be manually edited once at first time before update of the selected MOD will started. All further updates will fix automatically it again and again.
-- Create symlinks for Updated/Downloaded MODs
 - Transform the files and directories names from UPPER to LOWER case
 
-## Dependecies
+## Dependencies
 - curl
+- wget
+- steamcmd
+- rename
 
 ## Intstallation: 
-1. Clone or download this script to the /home directory of a user which is running an ArmA 3 server.
+1. Clone or download this script to the **/home** directory of a user which is running an ArmA 3 server.
 2. Set up the permissions to execute it for user.
 3. Update paths to installed ArmA 3 Linux Server 'mods', to the Workshop directry, where steam downlading the modes and to the Steam WorkShop where the 'steamcmd.sh is located.
-4. OPTIONAL: Add your Steam login and password to variables 'STEAM_LOGIN' and 'STEAM_PASS'
+4. OPTIONAL: You can create an external file auht.sh in the same folder and store your Steam credentials there. The password should be encrypted with a base64 encryption.
+
+To create your own auth.sh file make the followed (Enter your own Steam credentials before executing!):
+
+```
+echo '#!/bin/bash' > auth.sh && echo "" >> auth.sh
+echo "STEAM_LOGIN=\"YOUR_STEAM_LOGIN\"" >> auth.sh
+echo "STEAM_PASS=\"$(echo "YOUR_STEAM_PASSWORD" | base64)\"" >> auth.sh
+```
 
 ## Usage: 
 Run the script and follow an instructions.
 ## Known issues:
 - After the batch updating of a MODs - the Steam AplicationID is brokes again in a some MODs. These MOD's 'meta.cpp' file need to be updated manually again.
-- _**NOT A BUG**_: Some MODs has no an application ID in it's **meta.cpp** file (it's = 0). These MODs can't be updated by this script before editing the **meta.cpp** file. To make it work - just copy the MOD's Steam AppID from the MOD's WorkShop link and replace the "0" here
+- _**NOT A BUG**_: Some MODs has no an application ID in its **meta.cpp** file (it's = 0). These MODs can't be updated by this script before editing the **meta.cpp** file. To make it work - just copy the MOD's Steam AppID from the MOD's WorkShop link and replace the "0" here
 ```
 publishedid = 0;
 ```
