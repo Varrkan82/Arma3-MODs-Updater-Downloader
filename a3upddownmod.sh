@@ -294,7 +294,6 @@ update_all(){
 
     backupwkshpdir ${MOD_ID}
     MOD_UP_CMD="+workshop_download_item ${STMAPPID} ${MOD_ID} "
-    rm ${STMCMD_PATH}/appworkshop_${STMAPPID}.acf
 
     download_mod
 
