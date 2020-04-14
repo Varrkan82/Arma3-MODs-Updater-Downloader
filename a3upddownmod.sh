@@ -164,8 +164,19 @@ fixuppercase() {
     if [[ "$?" = "0" ]]; then
       echo "Fixed upper case for MOD ${MOD_NAME}"
     fi
-
 }
+
+# Rename mod.cpp
+renamemodcpp() {
+    FULL_PATH="${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
+    find ${FULL_PATH}/mod.cpp -exec mv -v {} {}.bak \;
+    if [[ "$?" = "0" ]]; then
+      echo "Backupped mod.cpp file in ${MOD_ID}"
+    else
+      echo "Can't rename mod.cpp file. Passed..."
+    fi
+}
+
 
 # Fix Steam application ID
 fixappid(){
@@ -296,7 +307,6 @@ update_all(){
     MOD_UP_CMD="+workshop_download_item ${STMAPPID} ${MOD_ID} "
 
     download_mod
-
     fixuppercase
 
     unset MOD_ID
@@ -348,6 +358,7 @@ case "${ACTION}" in
           fi
 
 	  update_all
+	  renamemodcpp
 
         else
           echo "All MODs are up to date. Exiting."
@@ -356,7 +367,6 @@ case "${ACTION}" in
         ;;
       s | S )
         authcheck
-
         countdown
 
         echo -ne "$(grep -hr -A1 'publishedid' --include=meta.cpp -E --exclude-dir='*_old_*' ${WKSHP_PATH}/content/${STMAPPID})\n" | less
@@ -401,6 +411,7 @@ case "${ACTION}" in
 
             backupwkshpdir
             update_mod
+	    renamemodcpp
 
             if [[ "$?" = "0" ]]; then
               echo "MODs updateis successfully downloaded to ${FULL_PATH}"
@@ -432,22 +443,9 @@ case "${ACTION}" in
     echo "${MOD_UP_CMD}"
 
     download_mod
-
+    renamemodcpp
+    fixuppercase
     fixappid
-
-    # Ask user to transform the names from upper to lower case
-    echo -ne "Do you want to transform all file's and directories names from UPPER to LOWER case?\n"
-
-    simplequery
-
-    if [[ "$?" = "0" ]]; then
-      find "${FULL_PATH}" -depth -exec rename 's/(.*)\/([^\/]*)/$1\/\L$2/' {} \;
-      exit 0
-    elif [[ "$?" = "1" ]]; then
-      echo -ne "\033[37;1;41mWarning!\033[0m You're selected to DO NOT transform the Upper case letters in a MOD's directory and file name.\n It could cause the probles with connecting the MOD to ArmA 3.\n"
-      echo ""
-      exit 0
-    fi
     ;;
 
   * )
