@@ -308,6 +308,7 @@ update_all(){
 
     download_mod
     fixuppercase
+     renamemodcpp
 
     unset MOD_ID
     unset MOD_NAME
@@ -358,7 +359,6 @@ case "${ACTION}" in
           fi
 
 	  update_all
-	  renamemodcpp
 
         else
           echo "All MODs are up to date. Exiting."
@@ -411,12 +411,13 @@ case "${ACTION}" in
 
             backupwkshpdir
             update_mod
-	    renamemodcpp
 
             if [[ "$?" = "0" ]]; then
               echo "MODs updateis successfully downloaded to ${FULL_PATH}"
               fixappid "${FULL_PATH}"
             fi
+
+	    renamemodcpp
           else
             echo -ne "\033[37;1;42mMOD ${MOD_NAME} is already up to date.\033[0m \n"
             exit 0
