@@ -50,7 +50,7 @@ STEAM_CHLOG_URL="https://steamcommunity.com/sharedfiles/filedetails/changelog"  
 STMCMD_PATH="/home/steam/server/steamcmd"            # Path to 'steamcmd.sh' file
 
 # INST_MODS_PATH="/home/steam/arma3server/serverfiles/mods"       # Path to ArmA 3 installed MODs in an installed  ArmA 3 server's directory
-WKSHP_PATH="/home/steam/Steam/steamapps/workshop"         # Path to there is Workshop downloaded the MODs
+WKSHP_PATH="/home/steam/.local/share/Steam/steamapps/workshop"         # Path to there is Workshop downloaded the MODs
 
 if [[ ! -f ../auth.sh ]]; then
 # Optional variables
