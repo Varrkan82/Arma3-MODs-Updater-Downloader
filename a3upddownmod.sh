@@ -49,7 +49,6 @@ STEAM_CHLOG_URL="https://steamcommunity.com/sharedfiles/filedetails/changelog"  
 
 STMCMD_PATH="/home/steam/server/steamcmd"            # Path to 'steamcmd.sh' file
 
-# INST_MODS_PATH="/home/steam/arma3server/serverfiles/mods"       # Path to ArmA 3 installed MODs in an installed  ArmA 3 server's directory
 WKSHP_PATH="/home/steam/.local/share/Steam/steamapps/workshop"         # Path to there is Workshop downloaded the MODs
 
 if [[ ! -f ../auth.sh ]]; then
@@ -138,10 +137,10 @@ get_mod_id(){
 
 # Get the MOD's last updated date from Steam Workshop
 get_wkshp_date(){
-  if [[ "$(${CURL_CMD} -s ${URL} | grep -m1 "Update:" | wc -w)" = "7" ]]; then
-    PRINT="$(${CURL_CMD} -s ${URL} | grep -m1 "Update:" | tr -d "," | awk '{ print $2" "$3" "$4" "$6 }')"
+  if [[ "$(${CURL_CMD} -sN ${URL} | grep -m1 "Update:" | wc -w)" = "7" ]]; then
+    PRINT="$(${CURL_CMD} -sN ${URL} | grep -m1 "Update:" | tr -d "," | awk '{ print $2" "$3" "$4" "$6 }')"
   else
-    PRINT="$(${CURL_CMD} -s ${URL} | grep -m1 "Update:" | awk '{ print $2" "$3" "'${CURRYEAR}'" "$5 }')"
+    PRINT="$(${CURL_CMD} -sN ${URL} | grep -m1 "Update:" | awk '{ print $2" "$3" "'${CURRYEAR}'" "$5 }')"
   fi
   WKSHP_UP_ST="${PRINT}"
 }
@@ -250,7 +249,7 @@ checkupdates(){
 download_mod(){
   if [[ $- =~ x ]]; then debug=1; set +x; fi
   until "${STMCMD_PATH}"/steamcmd.sh +login "${STEAM_LOGIN}" "${STEAM_PASS}" "${MOD_UP_CMD}" validate +quit; do
-    echo "Retrying after error while downloading."
+    echo -n "\nRetrying after error while downloading.\n"
     sleep 3
   done
   [[ $debug == 1 ]] && set -x
@@ -308,7 +307,7 @@ update_all(){
 
     download_mod
     fixuppercase
-     renamemodcpp
+#    renamemodcpp
 
     unset MOD_ID
     unset MOD_NAME
@@ -349,17 +348,9 @@ case "${ACTION}" in
         checkupdates
         # Print MODs which could be updated
         if [[ ! -z "${TO_UP[@]}" ]]; then
-          echo -e "Mods ${TO_UP[@]} can be updated. Do you want to proceed? [y|Y] or [n|N]: "
-          simplequery
-
-          if [[ "$?" = "0" ]]; then
-            authcheck
-          else
-            exit 7
-          fi
-
+          authcheck
 	  update_all
-
+          echo -ne "These Mods was updated:\n ${TO_UP[*]}"
         else
           echo "All MODs are up to date. Exiting."
           exit 0
@@ -417,7 +408,7 @@ case "${ACTION}" in
               fixappid "${FULL_PATH}"
             fi
 
-	    renamemodcpp
+#	    renamemodcpp
           else
             echo -ne "\033[37;1;42mMOD ${MOD_NAME} is already up to date.\033[0m \n"
             exit 0
@@ -444,7 +435,7 @@ case "${ACTION}" in
     echo "${MOD_UP_CMD}"
 
     download_mod
-    renamemodcpp
+#    renamemodcpp
     fixuppercase
     fixappid
     ;;
