@@ -159,10 +159,13 @@ countdown(){
 
 
 fixuppercase() {
+set -x
+    FULL_PATH="${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
     find ${FULL_PATH} -depth -exec rename 's/(.*)\/([^\/]*)/$1\/\L$2/' {} \;
     if [[ "$?" = "0" ]]; then
       echo "Fixed upper case for MOD ${MOD_NAME}"
     fi
+set +x
 }
 
 # Rename mod.cpp
