@@ -1,2 +1,5 @@
 auth.sh
 .history
+.vscode
+.gitignore
+notify_update_status.sh
