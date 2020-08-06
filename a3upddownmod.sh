@@ -159,13 +159,11 @@ countdown(){
 
 
 fixuppercase() {
-set -x
     FULL_PATH="${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
     find ${FULL_PATH} -depth -exec rename 's/(.*)\/([^\/]*)/$1\/\L$2/' {} \;
     if [[ "$?" = "0" ]]; then
       echo "Fixed upper case for MOD ${MOD_NAME}"
     fi
-set +x
 }
 
 # Rename mod.cpp
@@ -310,7 +308,6 @@ update_all(){
 
     download_mod
     fixuppercase
-#    renamemodcpp
 
     unset MOD_ID
     unset MOD_NAME
@@ -389,7 +386,8 @@ case "${ACTION}" in
             exit 6
           elif [[ -z "${MOD_ID}" ]]; then
             echo -ne "\033[37;1;41mNo 'meta.cpp' file found for MOD ${MOD_NAME}.\033[0m\n"
-            continue
+            #continue
+	    true
           fi
 
           URL="${STEAM_CHLOG_URL}/${MOD_ID}"
@@ -411,7 +409,6 @@ case "${ACTION}" in
               fixappid "${FULL_PATH}"
             fi
 
-#	    renamemodcpp
           else
             echo -ne "\033[37;1;42mMOD ${MOD_NAME} is already up to date.\033[0m \n"
             exit 0
@@ -438,7 +435,6 @@ case "${ACTION}" in
     echo "${MOD_UP_CMD}"
 
     download_mod
-#    renamemodcpp
     fixuppercase
     fixappid
     ;;
