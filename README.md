@@ -1,5 +1,5 @@
 # a3upddownmod
-# BASH Script for ArmA 3 MODs updating/downloading for Linux Servers 
+# BASH Script for Arma 3 MODs updating/downloading for Linux Servers 
 
 This script is a full interactive. The complete automatic start is planing but not implemented yet.
 
@@ -19,9 +19,9 @@ This script is a full interactive. The complete automatic start is planing but n
 - rename
 
 ## Intstallation: 
-1. Clone or download this script to the **/home** directory of a user which is running an ArmA 3 server.
+1. Clone or download this script to the **/home** directory of a user which is running an Arma 3 server.
 2. Set up the permissions to execute it for user.
-3. Update paths to installed ArmA 3 Linux Server **mods**, to the Workshop directry, where Steam downlading the modes and where the `steamcmd.sh` is located.
+3. Update paths to installed Arma 3 Linux Server **mods**, to the Workshop directry, where Steam downlading the modes and where the `steamcmd.sh` is located.
 4. OPTIONAL: You can create an external file `auht.sh` in a folder a step above of a `a3upddownmod.sh` is located and to store your Steam credentials there. The password should be encrypted with a base64 encryption.
 
 To create your own auth.sh file make the followed (Enter your own Steam credentials before executing!):
