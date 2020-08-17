@@ -1,0 +1,17 @@
+#!/bin/bash
+
+GLOBIGNORE="*"
+url=https://discord.com/api/webhooks/.../...
+MSG="$(echo ${1} | cut -c 1-2000 -)"
+post_data(){
+  cat <<EOF
+{
+  "username": "Mods Updates",
+  "content": "${MSG}"
+}
+EOF
+}
+
+curl -H 'Content-Type: application/json' \
+-X POST \
+-d "$(post_data)" ${url}

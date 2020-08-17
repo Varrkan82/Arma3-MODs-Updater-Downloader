@@ -41,22 +41,24 @@ LICENSE
 EXITCODES
 
 # Mandatory variables
-STMAPPID="107410"                 # AppID of an ArmA 3 which used to download the MODs. Should not be changed usually.
+STMAPPID="107410"                 # AppID of an Arma 3 which used to download the MODs. Should not be changed usually.
 CURRYEAR=$(date +%Y)                  # Current year
 CURL_CMD="/usr/bin/curl"               # CURL command
 STEAM_CHLOG_URL="https://steamcommunity.com/sharedfiles/filedetails/changelog"    # URL to get the date of the last MOD's update in a WorkShop
 # Change it according to your paths
+# Path to 'steamcmd' executable file
+STMCMD_PATH="/home/steam/server/steamcmd/steamcmd.sh"
+# Path to there is Workshop downloaded the MODs
+WKSHP_PATH="/home/steam/Steam/steamapps/workshop"
+# Notification script
+NOTIFICATION_SCRIPT="$(dirname ${BASH_SOURCE[0]})/notify_update_status.sh"
 
-STMCMD_PATH="/home/steam/server/steamcmd"            # Path to 'steamcmd.sh' file
-
-WKSHP_PATH="/home/steam/.local/share/Steam/steamapps/workshop"         # Path to there is Workshop downloaded the MODs
-
-if [[ ! -f ../auth.sh ]]; then
+if [[ ! -f $(dirname ${BASH_SOURCE[0]})/../auth.sh ]]; then
 # Optional variables
-    STEAM_LOGIN=""                    # Steam login (with a purchased ArmA 3)
+    STEAM_LOGIN=""                    # Steam login (with a purchased Arma 3)
     STEAM_PASS=""                   # Steam password
   else
-    source ../auth.sh
+    source $(dirname ${BASH_SOURCE[0]})/../auth.sh
     if [[ $- =~ x ]]; then debug=1; set +x; fi
     STEAM_PASS="$(echo ${STEAM_PASS} | base64 -d)"
     [[ $debug == 1 ]] && set -x
@@ -64,7 +66,7 @@ if [[ ! -f ../auth.sh ]]; then
 fi
 
 # Check for needed paths and for CURL
-if [[ ! -d "${STMCMD_PATH}" || ! -d "${WKSHP_PATH}" ]]; then
+if [[ ! -f "${STMCMD_PATH}" || ! -d "${WKSHP_PATH}" ]]; then
   echo "Some path(s) is/(are) missing. Check - does an all paths are correctly setted up! Exit."
   exit 11
 elif [[ ! -f "${CURL_CMD}" ]]; then
@@ -73,6 +75,21 @@ elif [[ ! -f "${CURL_CMD}" ]]; then
 fi
 
 ## Functions
+# Usage
+usage() {
+  cat << EOF
+Usage
+  $0 [ -h ] [ -n ] { -c | -u }
+  Where:
+   -h  -  Show this help
+   -n  -  Execute notification script.
+
+   -c  -  Check for MOD's updates, do not update
+       OR
+   -u  -  Update MODs
+EOF
+}
+
 # Check authorization data for Steam
 authcheck(){
   # Checking for does the Steam login and password are pre-configured?
@@ -209,7 +226,7 @@ checkupdates(){
     MOD_ID="${MOD_ID%$'\r'}"
     URL="${STEAM_CHLOG_URL}/${MOD_ID}"
     URL="${URL%$'\r'}"
-    MOD_NAME=$(grep "name" ${WKSHP_PATH}/content/${STMAPPID}/${MODs_NAME}/meta.cpp | awk -F"=" '{ print $2 }' | sed 's/\s/_/g' | tr -d ";$")
+    MOD_NAME=$(grep "name" ${WKSHP_PATH}/content/${STMAPPID}/${MODs_NAME}/meta.cpp | awk -F"=" '{ print $2 }' | tr [:space:] "_" | tr -d ";$" | awk -F\" '{ print $2 }')
     if [[ "${MOD_ID}" = "" ]]; then
       exit 100
     fi
@@ -234,10 +251,10 @@ checkupdates(){
         MOD_UP_CMD+="+workshop_download_item ${STMAPPID} ${MOD_ID} "
         TO_UP+="${MOD_NAME} "
         MOD_ID_LIST+="${MOD_ID} "
-        echo -en "\033[37;1;42mMod ${MOD_NAME} can be updated.\033[0m\n\n"
+        echo -en "\033[37;1;42mMod \e[34m${MOD_NAME}\e[37;1;42m can be updated.\033[0m\n\n"
         continue
       else
-        echo -en "MOD ${MOD_NAME} is already up to date!\n\n"
+        echo -en "MOD \e[1;32m${MOD_NAME}\e[0m is already up to date!\n\n"
         continue
       fi
     fi
@@ -249,7 +266,7 @@ checkupdates(){
 # Download MOD by its ID
 download_mod(){
   if [[ $- =~ x ]]; then debug=1; set +x; fi
-  until "${STMCMD_PATH}"/steamcmd.sh +login "${STEAM_LOGIN}" "${STEAM_PASS}" "${MOD_UP_CMD}" validate +quit; do
+  until "${STMCMD_PATH}" +login "${STEAM_LOGIN}" "${STEAM_PASS}" "${MOD_UP_CMD}" validate +quit; do
     echo -n "\nRetrying after error while downloading.\n"
     sleep 3
   done
@@ -308,11 +325,70 @@ update_all(){
 
     download_mod
     fixuppercase
+#    renamemodcpp
 
     unset MOD_ID
     unset MOD_NAME
   done
 }
+
+notify_send(){
+set -x
+  if [[ ! -z $DO_NOTIFY ]]; then
+    ${NOTIFICATION_SCRIPT} "${MSG_SEND}"
+    exit 0
+  else
+    exit 0
+  fi
+set +x
+}
+
+DO_CHECK=
+DO_UPDATE=
+DO_NOTIFY=
+while getopts "ucnh" opt; do
+  case $opt in
+    c)
+      DO_CHECK=1
+    ;;
+    u)
+      DO_UPDATE=1
+    ;;
+    n)
+      DO_NOTIFY=1
+    ;;
+    h)
+      usage
+      exit 0
+    ;;
+  esac
+done
+if [[ ! -z $DO_CHECK && ! -z $DO_UPDATE ]]; then
+  echo "Error: Only one of check or update may be supplied" >&2
+  exit 1
+elif [[ -z $DO_CHECK && -z $DO_UPDATE && ! -z $DO_NOTIFY ]]; then
+  echo "Error: -n option can not be used separate of others!"
+  exit 1
+elif [[ ! -z $DO_CHECK ]]; then
+  checkupdates
+  if [[ ! -z "${TO_UP[@]}" ]]; then
+    MSG_SEND="Can be updated:\n**- $(echo ${TO_UP[*]} | sed 's/ /\\n- /g')**\nPlease, proceed manually."
+    notify_send
+  else
+    exit 0
+  fi
+elif [[ ! -z $DO_UPDATE  ]]; then
+  checkupdates
+  # Print MODs which could be updated
+  if [[ ! -z "${TO_UP[@]}" ]]; then
+    authcheck
+    update_all
+    MSG_SEND="These Mod(s) has been updated:\n**- $(echo ${TO_UP[*]} | sed 's/ /\\n- /g')**"
+    notify_send
+  else
+    exit 0
+  fi
+fi
 
 
 ## End of a functions block
@@ -350,7 +426,7 @@ case "${ACTION}" in
         if [[ ! -z "${TO_UP[@]}" ]]; then
           authcheck
 	  update_all
-          echo -ne "These Mods was updated:\n ${TO_UP[*]}"
+          echo -ne "These Mods has been updated:\n ${TO_UP[*]}"
         else
           echo "All MODs are up to date. Exiting."
           exit 0
@@ -386,8 +462,7 @@ case "${ACTION}" in
             exit 6
           elif [[ -z "${MOD_ID}" ]]; then
             echo -ne "\033[37;1;41mNo 'meta.cpp' file found for MOD ${MOD_NAME}.\033[0m\n"
-            #continue
-	    true
+            true
           fi
 
           URL="${STEAM_CHLOG_URL}/${MOD_ID}"
@@ -435,6 +510,7 @@ case "${ACTION}" in
     echo "${MOD_UP_CMD}"
 
     download_mod
+#    renamemodcpp
     fixuppercase
     fixappid
     ;;
