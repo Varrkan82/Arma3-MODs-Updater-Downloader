@@ -33,7 +33,7 @@ echo "STEAM_PASS=\"$(echo "YOUR_STEAM_PASSWORD" | base64)\"" >> auth.sh
 ```
 
 ## Usage: 
-Run the script and follow an instructions for interactive use OR run `./a3upddownmods.sh -h` for CLI startup (Check/Update available only for now).
+Run the script and follow an instructions for interactive use OR run `./a3upddownmods.sh -h` for CLI usage overview (Check/Update available only for now).
 
 ## Known issues:
 - After the batch updating of a MODs - the Steam AplicationID is brokes again in a some MODs. These MOD's 'meta.cpp' file need to be updated manually again.
