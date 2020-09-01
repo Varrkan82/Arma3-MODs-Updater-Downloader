@@ -333,14 +333,12 @@ update_all(){
 }
 
 notify_send(){
-set -x
   if [[ ! -z $DO_NOTIFY ]]; then
     ${NOTIFICATION_SCRIPT} "${MSG_SEND}"
     exit 0
   else
     exit 0
   fi
-set +x
 }
 
 DO_CHECK=

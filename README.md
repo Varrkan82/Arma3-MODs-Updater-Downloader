@@ -33,33 +33,24 @@ echo "STEAM_PASS=\"$(echo "YOUR_STEAM_PASSWORD" | base64)\"" >> auth.sh
 ```
 
 ## Usage: 
-Run the script and follow an instructions for interactive use OR run `./a3upddownmods.sh -h` for CLI usage overview (Check/Update available only for now).
 
-## Known issues:
-- After the batch updating of a MODs - the Steam AplicationID is brokes again in a some MODs. These MOD's 'meta.cpp' file need to be updated manually again.
-- _**NOT A BUG**_: Some MODs has no an application ID in its **meta.cpp** file (it's = 0). These MODs can't be updated by this script before editing the **meta.cpp** file. To make it work - just copy the MOD's Steam AppID from the MOD's WorkShop link and replace the "0" here
+###CLI
+Run `./a3upddownmods.sh -h` for CLI usage overview (Check/Update available only for now).
+
+If you want to use this script to check or to update the mods automatically and want you to be notified about it - do the next:
+
 ```
-publishedid = 0;
+cp notify_update_status.sh.example notify_update_status.sh && nano notify_update_status.sh
 ```
-with your AppID to make it looks like a
-```
-publishedid = 123456789;
-```
-For example
-```
-protocol = 1;
-publishedid = 0;
-name = "@ACE Compat_RHS_USAF";
-timestamp = 5248321387302862629;
-```
-will take a look like
-```
-protocol = 1;
-publishedid =773125288;
-name = "@ACE Compat_RHS_USAF";
-timestamp = 5248321387302862629;
-```
-UPD: This could be fixed by re-downloading the MOD with 'publishedid =0;' in **meta.cpp** by current script. It will replace the '0' by pasted Steam Workshop AppID.
+
+Update `url=` variable to your Discord WEB-hook URL.
+
+Add the script with needed parameters to you CRON (or to systemd timer job). For example `0 3 * * * /home/steam/a3upddownmods/a3upddownmods.sh -cn` to check for updates automatically.
+
+I recommend to automatically check for updates ONLY and to do not use an automatic update as in this case you'll need to update mod's keys in server `keys` folder and to restart server manually anyway.
+
+###Interactive
+Run the script and follow an instructions for interactive usage.
 
 ## Plans
 1. Run script with a CLI options to make all jobs automatically (partially done)
