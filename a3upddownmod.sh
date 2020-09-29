@@ -370,7 +370,7 @@ elif [[ -z $DO_CHECK && -z $DO_UPDATE && ! -z $DO_NOTIFY ]]; then
 elif [[ ! -z $DO_CHECK ]]; then
   checkupdates
   if [[ ! -z "${TO_UP[@]}" ]]; then
-    MSG_SEND="Can be updated:\n**- $(echo ${TO_UP[*]} | sed 's/ /\\n- /g')**\nPlease, proceed manually."
+    MSG_SEND=":exclamation: Can be updated:\n**- $(echo ${TO_UP[*]} | sed 's/ /\\n- /g')**\nPlease, proceed manually."
     notify_send
   else
     exit 0
@@ -381,7 +381,7 @@ elif [[ ! -z $DO_UPDATE  ]]; then
   if [[ ! -z "${TO_UP[@]}" ]]; then
     authcheck
     update_all
-    MSG_SEND="These Mod(s) has been updated:\n**- $(echo ${TO_UP[*]} | sed 's/ /\\n- /g')**"
+    MSG_SEND=":white_check_mark::exclamation: These Mod(s) has been updated:\n**- $(echo ${TO_UP[*]} | sed 's/ /\\n- /g')**"
     notify_send
   else
     exit 0
