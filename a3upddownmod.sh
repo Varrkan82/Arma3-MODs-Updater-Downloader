@@ -500,7 +500,7 @@ case "${ACTION}" in
     authcheck
     echo ""
     # Ask user to enter a MOD Steam AppID
-    read -e -p "Please, enter an Application ID in a Steam WokrShop to dowdnload: " MOD_ID
+    read -e -p "Please, enter an Application ID in a Steam WorkShop to download: " MOD_ID
     echo "Application ID IS: ${MOD_ID}\n"
     echo "Starting to download MOD ID ${MOD_ID}..."
     MODS_PATH=${FULL_PATH}
