@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set +e
 
 #LC_ALL=C
 
@@ -31,14 +32,36 @@ LICENSE
 : << EXITCODES
 
 1 - Some external program error
-2 - No authentication data for Steam account
-3 - Wrong selection
-4 - Wrong MODs name
-5 - Can not creeate the symbolic link
-6 - Wrong MODs ID in "meta.cpp" file ("0" as usually)
-7 - Interrupted by user
+51 - Some path(s) is/(are) missing.
+52 - No authentication data for Steam account
+53 - Wrong selection
+54 - Wrong MOD ID
+55 - Reserved code. Not used
+56 - Wrong MODs ID in "meta.cpp" file ("0" as usually)
+57 - No MOD_ID in meta.cpp file
+58 - Earley interrupted 
+60 - Already running
 
 EXITCODES
+
+trap cleanup EXIT QUIT ABRT TERM
+trap 'exit $?' ERR
+trap 'exit 2' INT
+PID_FILE=/tmp/a3upddownmod.pid
+
+cleanup() {
+  local EXIT_CODE=$?
+  [[ "${EXIT_CODE}" = "60" ]]  && exit "${EXIT_CODE}"
+  rm ${PID_FILE}
+  exit "${EXIT_CODE}"
+}
+
+if [[ -f ${PID_FILE} ]]; then
+  echo "Already running: PID=$(cat ${PID_FILE})"
+  exit 60
+else
+  echo $$ > ${PID_FILE}
+fi
 
 # Mandatory variables
 STMAPPID="107410"                 # AppID of an Arma 3 which used to download the MODs. Should not be changed usually.
@@ -68,10 +91,10 @@ fi
 # Check for needed paths and for CURL
 if [[ ! -f "${STMCMD_PATH}" || ! -d "${WKSHP_PATH}" ]]; then
   echo "Some path(s) is/(are) missing. Check - does an all paths are correctly setted up! Exit."
-  exit 11
+  return 51
 elif [[ ! -f "${CURL_CMD}" ]]; then
   echo "CURL is missing. Check - does it installed and pass the correct path to it into variable 'CURL_CMD'. Exit."
-  exit 11
+  return 51
 fi
 
 ## Functions
@@ -91,14 +114,14 @@ EOF
 }
 
 # Check authorization data for Steam
-authcheck(){
+authcheck() {
   # Checking for does the Steam login and password are pre-configured?
   if [[ -z "${STEAM_LOGIN}" ]]; then
     clear
     read -e -p "Steam login is undefined. Please, enter it now: " STEAM_LOGIN
     if [[ -z "${STEAM_LOGIN}" ]]; then
       echo -ne "Steam login not specified! Exiting!\n"
-      exit 2
+      return 52
     fi
   fi
   if [[ -z "${STEAM_PASS}" ]]; then
@@ -106,16 +129,20 @@ authcheck(){
     read -sep "Steam password is undefined. Please, enter it now (password will not be displayed in console output!): " STEAM_PASS
     if [[ -z "${STEAM_PASS}" ]]; then
       echo -ne "Steam password not specified! Exiting!\n"
-      exit 2
+      return 52
     fi
   fi
   clear
 }
 
-backupwkshpdir(){
-  if [[ "${MOD_ID}" = "" ]]; then
-    exit 100
+check_mod_id() {
+  if [[ -z "${MOD_ID}" ]]; then
+    return 57
   fi
+}
+
+backupwkshpdir() {
+  check_mod_id
   FULL_PATH="${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
   if [[ -d "${FULL_PATH}" ]]; then
     echo "Workshop target directory for MOD ${MOD_NAME} is already present. Moving it to ${FULL_PATH}_old_$(date +%y%m%d-%H%M)"
@@ -124,10 +151,8 @@ backupwkshpdir(){
 }
 
 # Get original MOD's name from meta.cpp file
-get_mod_name(){
-  if [[ "${MOD_ID}" = "" ]]; then
-    exit 100
-  fi
+get_mod_name() {
+  check_mod_id
   FULL_PATH="${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
   if [[ -f "${FULL_PATH}"/meta.cpp ]]; then
     grep -h "name" "${FULL_PATH}"/meta.cpp | \
@@ -140,10 +165,8 @@ get_mod_name(){
 }
 
 # Mod's application ID from meta.cpp file
-get_mod_id(){
-  if [[ "${MOD_ID}" = "" ]]; then
-    exit 100
-  fi
+get_mod_id() {
+  check_mod_id
   FULL_PATH="${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
   if [[ -f "${FULL_PATH}"/meta.cpp ]]; then
     grep -h "publishedid" "${FULL_PATH}"/meta.cpp | \
@@ -153,7 +176,7 @@ get_mod_id(){
 }
 
 # Get the MOD's last updated date from Steam Workshop
-get_wkshp_date(){
+get_wkshp_date() {
   if [[ "$(${CURL_CMD} -sN ${URL} | grep -m1 "Update:" | wc -w)" = "7" ]]; then
     PRINT="$(${CURL_CMD} -sN ${URL} | grep -m1 "Update:" | tr -d "," | awk '{ print $2" "$3" "$4" "$6 }')"
   else
@@ -162,7 +185,7 @@ get_wkshp_date(){
   WKSHP_UP_ST="${PRINT}"
 }
 
-countdown(){
+countdown() {
   local TIMEOUT="10"
   for (( TIMER="${TIMEOUT}"; TIMER>0; TIMER--)); do
     printf "\rDisplay the list in: ${TIMER}\nor Press any key to continue without waiting... :)"
@@ -177,7 +200,7 @@ countdown(){
 
 fixuppercase() {
     FULL_PATH="${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
-    find ${FULL_PATH} -depth -exec rename 's/(.*)\/([^\/]*)/$1\/\L$2/' {} \;
+    find "${FULL_PATH}" -depth -exec rename 's/(.*)\/([^\/]*)/$1\/\L$2/' {} \;
     if [[ "$?" = "0" ]]; then
       echo "Fixed upper case for MOD ${MOD_NAME}"
     fi
@@ -186,8 +209,7 @@ fixuppercase() {
 # Rename mod.cpp
 renamemodcpp() {
     FULL_PATH="${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
-    find ${FULL_PATH}/mod.cpp -exec mv -v {} {}.bak \;
-    if [[ "$?" = "0" ]]; then
+    if find "${FULL_PATH}"/mod.cpp -exec mv -v {} {}.bak \; ; then
       echo "Backupped mod.cpp file in ${MOD_ID}"
     else
       echo "Can't rename mod.cpp file. Passed..."
@@ -196,12 +218,9 @@ renamemodcpp() {
 
 
 # Fix Steam application ID
-fixappid(){
-  if [[ -z "$MOD_ID" ]]; then
-    exit 100
-  fi
+fixappid() {
   FULL_PATH="${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
-  if [[ "$?" = "0" ]]; then
+  if check_mod_id; then
     DMOD_ID=$(get_mod_id)         # Downloaded MODs ID
     DMOD_ID="${DMOD_ID%$'\r'}"
     if [[ "${DMOD_ID}" = "0" ]]; then
@@ -221,15 +240,13 @@ checkupdates(){
   TO_UP=( )
   MOD_UP_CMD=( )
   MOD_ID_LIST=( )
-  for MODs_NAME in $(ls -1 ${WKSHP_PATH}/content/${STMAPPID} | grep -v -E "*old*"); do
-    MOD_ID=$(grep "publishedid" ${WKSHP_PATH}/content/${STMAPPID}/${MODs_NAME}/meta.cpp | awk -F"=" '{ print $2 }' | tr -d [:blank:] | tr -d [:space:] | tr -d ";$")
+  for MODs_NAME in $(ls -1 "${WKSHP_PATH}"/content/"${STMAPPID}" | grep -v "*old*"); do
+    MOD_ID=$(grep "publishedid" "${WKSHP_PATH}"/content/"${STMAPPID}"/"${MODs_NAME}"/meta.cpp | awk -F"=" '{ print $2 }' | tr -d [:blank:] | tr -d [:space:] | tr -d ";$")
     MOD_ID="${MOD_ID%$'\r'}"
     URL="${STEAM_CHLOG_URL}/${MOD_ID}"
     URL="${URL%$'\r'}"
-    MOD_NAME=$(grep "name" ${WKSHP_PATH}/content/${STMAPPID}/${MODs_NAME}/meta.cpp | awk -F"=" '{ print $2 }' | tr [:space:] "_" | tr -d ";$" | awk -F\" '{ print $2 }')
-    if [[ "${MOD_ID}" = "" ]]; then
-      exit 100
-    fi
+    MOD_NAME=$(grep "name"  "${WKSHP_PATH}"/content/"${STMAPPID}"/"${MODs_NAME}"/meta.cpp | awk -F"=" '{ print $2 }' | tr [:space:] "_" | tr -d ";$" | awk -F\" '{ print $2 }')
+    check_mod_id
     FULL_PATH="${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
 
     get_wkshp_date
@@ -248,9 +265,9 @@ checkupdates(){
       # Compare update time
       if [[ ${UTIME} -gt ${CTIME} ]]; then
         # Construct the list of MODs to update
-        MOD_UP_CMD+="+workshop_download_item ${STMAPPID} ${MOD_ID} "
-        TO_UP+="${MOD_NAME} "
-        MOD_ID_LIST+="${MOD_ID} "
+        MOD_UP_CMD+=("+workshop_download_item ${STMAPPID} ${MOD_ID} ")
+        TO_UP+=("${MOD_NAME} ")
+        MOD_ID_LIST+=("${MOD_ID} ")
         echo -en "\033[37;1;42mMod \e[34m${MOD_NAME}\e[37;1;42m can be updated.\033[0m\n\n"
         continue
       else
@@ -271,15 +288,16 @@ download_mod(){
     sleep 3
   done
   [[ $debug == 1 ]] && set -x
-
+  if [[ ! -d ${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID} ]]; then
+    echo "NOT Downloaded! Exiting!"
+    return 54
+  fi 
   echo -e "\n"
 }
 
 # Update single MOD
 update_mod(){
-  if [[ "${MOD_ID}" = "" ]]; then
-    exit 100
-  fi
+  check_mod_id
   FULL_PATH="${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
   rm -rf "${FULL_PATH}"
 
@@ -297,11 +315,11 @@ simplequery(){
         ;;
       n | N )
         SELECT=true
-	return 1
+	      exit 1
         ;;
       quit )
         echo -ne "\033[37;1;41mWarning!\033[0m Some important changes wasn't made. This could or could not to cause the different problems.\n"
-        exit 7
+        exit 58
 	      ;;
       * )
         echo -ne "Wrong selection! Try again or type 'quit' to interrupt process.\n"
@@ -315,9 +333,7 @@ update_all(){
   TMP_NAMES=("${TO_UP[@]}")
   TMP_IDS=("${MOD_ID_LIST[@]}")
   for MOD_ID in ${TMP_IDS[@]} ; do
-    if [[ -z "$MOD_ID" ]]; then
-      exit 100
-    fi
+    check_mod_id
     FULL_PATH="${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
 
     backupwkshpdir ${MOD_ID}
@@ -333,8 +349,8 @@ update_all(){
 }
 
 notify_send(){
-  if [[ ! -z $DO_NOTIFY ]]; then
-    ${NOTIFICATION_SCRIPT} "${MSG_SEND}"
+  if [[ ! -z "${DO_NOTIFY}" ]]; then
+    "${NOTIFICATION_SCRIPT}" "${MSG_SEND}"
     exit 0
   else
     exit 0
@@ -348,17 +364,21 @@ while getopts "ucnh" opt; do
   case $opt in
     c)
       DO_CHECK=1
-    ;;
+     ;;
     u)
       DO_UPDATE=1
-    ;;
+      ;;
     n)
       DO_NOTIFY=1
-    ;;
+      ;;
     h)
       usage
       exit 0
-    ;;
+      ;;
+    *)
+      echo "Wrong parameter!"
+      exit 1
+      ;;
   esac
 done
 if [[ ! -z $DO_CHECK && ! -z $DO_UPDATE ]]; then
@@ -423,7 +443,7 @@ case "${ACTION}" in
         # Print MODs which could be updated
         if [[ ! -z "${TO_UP[@]}" ]]; then
           authcheck
-	  update_all
+	        update_all
           echo -ne "These Mods has been updated:\n ${TO_UP[*]}"
         else
           echo "All MODs are up to date. Exiting."
@@ -438,26 +458,26 @@ case "${ACTION}" in
         echo -ne "Please, specify MOD's ID.\n"
         # Ask user to enter a MOD's name to update
         echo -ne "You have installed a MODs listed above. Please, enter the MODs ID to update:\n"
-	unset MOD_ID
-	unset FULL_PATH
+        unset MOD_ID
+        unset FULL_PATH
         read -er MOD_ID
 
         # Check syntax
-	DIGITS="^[0-9]+$"
-        if ! [[ "${MOD_ID}" =~ ${DIGITS} ]] && [[ "${MOD_ID}" = "" ]]; then
+	      DIGITS="^[0-9]+$"
+        if ! [[ "${MOD_ID}" =~ ${DIGITS} ]] && [[ -z "${MOD_ID}" ]]; then
           echo -ne "Wrong MOD's ID! Exiting!\n"
-          exit 4
+          exit 54
         else
           # Update the single selected MOD
           MOD_ID="${MOD_ID%$'\r'}"
-	  MODS_PATH="${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
-	  MOD_NAME=$(get_mod_name)
-	  echo "Starting to update MOD ${MOD_NAME}..."
+          MODS_PATH="${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
+          MOD_NAME=$(get_mod_name)
+          echo "Starting to update MOD ${MOD_NAME}..."
 
           if [[ "${MOD_ID}" = "0" ]]; then
             echo -ne "MOD application ID is not configured for mod ${MOD_NAME} in file ${FULL_PATH}/meta.cpp \n"
             echo -ne "Find it by the MODs name in a Steam Workshop and update in MODs 'meta.cpp' file or use Download option to get MOD by it's ID. Exiting.\n"
-            exit 6
+            exit 56
           elif [[ -z "${MOD_ID}" ]]; then
             echo -ne "\033[37;1;41mNo 'meta.cpp' file found for MOD ${MOD_NAME}.\033[0m\n"
             true
@@ -490,7 +510,7 @@ case "${ACTION}" in
         ;;
       * )
         echo -ne "Wrong selection! Exiting.\n"
-        exit 7
+        exit 53
         ;;
     esac
     ;;
@@ -501,6 +521,10 @@ case "${ACTION}" in
     echo ""
     # Ask user to enter a MOD Steam AppID
     read -e -p "Please, enter an Application ID in a Steam WorkShop to download: " MOD_ID
+    if [[ -d "${WKSHP_PATH}"/content/"${STMAPPID}"/"${MOD_ID}" ]]; then
+      echo "Already present! Use UPDATE action. Exiting!"
+      exit 1
+    fi
     echo "Application ID IS: ${MOD_ID}\n"
     echo "Starting to download MOD ID ${MOD_ID}..."
     MODS_PATH=${FULL_PATH}
@@ -508,14 +532,13 @@ case "${ACTION}" in
     echo "${MOD_UP_CMD}"
 
     download_mod
-#    renamemodcpp
     fixuppercase
     fixappid
     ;;
 
   * )
     echo -ne "Wrong selection! Exiting!\n"
-    exit 3
+    exit 53
     ;;
 esac
 echo ""
