@@ -3,6 +3,7 @@ set +e
 
 #LC_ALL=C
 
+# Licence block
 : << LICENSE
 
 MIT License
@@ -29,6 +30,7 @@ SOFTWARE.
 
 LICENSE
 
+# List of a script exit codes
 : << EXITCODES
 
 1 - Some external program error
@@ -44,6 +46,7 @@ LICENSE
 
 EXITCODES
 
+# Trap exit codes and remove PID file on exit
 trap cleanup EXIT QUIT ABRT TERM
 trap 'exit $?' ERR
 trap 'exit 2' INT
@@ -62,9 +65,10 @@ if [[ -f ${PID_FILE} ]]; then
 else
   echo $$ > ${PID_FILE}
 fi
+###
 
 # Mandatory variables
-STMAPPID="107410"                 # AppID of an Arma 3 which used to download the MODs. Should not be changed usually.
+STMAPPID="107410"                 # AppID of an Arma 3 which is used to download the MODs. Should not be changed usually.
 CURRYEAR=$(date +%Y)                  # Current year
 CURL_CMD="/usr/bin/curl"               # CURL command
 STEAM_CHLOG_URL="https://steamcommunity.com/sharedfiles/filedetails/changelog"    # URL to get the date of the last MOD's update in a WorkShop
@@ -76,6 +80,7 @@ WKSHP_PATH="/home/steam/Steam/steamapps/workshop"
 # Notification script
 NOTIFICATION_SCRIPT="$(dirname ${BASH_SOURCE[0]})/notify_update_status.sh"
 
+# Authentication
 if [[ ! -f $(dirname ${BASH_SOURCE[0]})/../auth.sh ]]; then
 # Optional variables
     STEAM_LOGIN=""                    # Steam login (with a purchased Arma 3)
@@ -141,6 +146,7 @@ check_mod_id() {
   fi
 }
 
+# Backup
 backupwkshpdir() {
   check_mod_id
   FULL_PATH="${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
@@ -197,7 +203,7 @@ countdown() {
   done
 }
 
-
+# Fix case
 fixuppercase() {
     FULL_PATH="${WKSHP_PATH}/content/${STMAPPID}/${MOD_ID}"
     find "${FULL_PATH}" -depth -exec rename 's/(.*)\/([^\/]*)/$1\/\L$2/' {} \;
@@ -240,7 +246,7 @@ checkupdates(){
   TO_UP=( )
   MOD_UP_CMD=( )
   MOD_ID_LIST=( )
-  for MODs_NAME in $(ls -1 "${WKSHP_PATH}"/content/"${STMAPPID}" | grep -v "*old*"); do
+  for MODs_NAME in $(ls -1 "${WKSHP_PATH}"/content/"${STMAPPID}" | grep -v -E "*old*"); do
     MOD_ID=$(grep "publishedid" "${WKSHP_PATH}"/content/"${STMAPPID}"/"${MODs_NAME}"/meta.cpp | awk -F"=" '{ print $2 }' | tr -d [:blank:] | tr -d [:space:] | tr -d ";$")
     MOD_ID="${MOD_ID%$'\r'}"
     URL="${STEAM_CHLOG_URL}/${MOD_ID}"
@@ -251,7 +257,7 @@ checkupdates(){
 
     get_wkshp_date
 
-    UTIME=$(date --date="${WKSHP_UP_ST}" +%s)
+    UTIME=$(date --date=${WKSHP_UP_ST} +%s)
     echo ${FULL_PATH}
     CTIME=$(date --date="$(stat ${FULL_PATH} | sed '6q;d' | cut -d" " -f2-)" +%s ) 				#Fix for MC syntax hilighting #"
 
@@ -305,6 +311,7 @@ update_mod(){
   fixuppercase
 }
 
+# Ask for confirmation
 simplequery(){
   SELECT=false
   while ! $SELECT; do
@@ -348,6 +355,7 @@ update_all(){
   done
 }
 
+# Send notification
 notify_send(){
   if [[ ! -z "${DO_NOTIFY}" ]]; then
     "${NOTIFICATION_SCRIPT}" "${MSG_SEND}"
@@ -357,6 +365,7 @@ notify_send(){
   fi
 }
 
+# Check CLI options
 DO_CHECK=
 DO_UPDATE=
 DO_NOTIFY=
@@ -419,7 +428,8 @@ echo -ne "Any other selection will cause script to stop.\n"
 read -e -p "Make selection please: " ACTION
 
 case "${ACTION}" in
-  # Actions section
+  ## Actions section
+  # Check for updates, do not update
   c | C )
     checkupdates
 
@@ -431,25 +441,28 @@ case "${ACTION}" in
       exit 0
     fi
     ;;
+  # Proceed update  after check
   u | U )
     clear
-    # Ask user to select update mode
 
+    # Ask user to select update mode
     read -e -p "How do you want to update? [b|B]-Batch or [s|S]-Single MOD? " UPD_M
     case "${UPD_M}" in
+  # Batch update
       b | B )
 	# Check updates for installed MODs
         checkupdates
         # Print MODs which could be updated
         if [[ ! -z "${TO_UP[@]}" ]]; then
           authcheck
-	        update_all
+	  update_all
           echo -ne "These Mods has been updated:\n ${TO_UP[*]}"
         else
           echo "All MODs are up to date. Exiting."
           exit 0
         fi
         ;;
+  # Update a single MOD
       s | S )
         authcheck
         countdown
@@ -488,7 +501,7 @@ case "${ACTION}" in
 
           get_wkshp_date
 
-          UTIME=$(date --date="${WKSHP_UP_ST}" +%s)
+          UTIME=$(date --date=${WKSHP_UP_ST} +%s)
           CTIME=$(date --date="$(stat ${MODS_PATH} | sed '6q;d' | cut -d" " -f2-)" +%s )   #Fix for MC syntax hilighting #"
           if [[ ${UTIME} -gt ${CTIME} ]]; then
             MOD_UP_CMD=+"workshop_download_item ${STMAPPID} ${MOD_ID}"
@@ -514,9 +527,8 @@ case "${ACTION}" in
         ;;
     esac
     ;;
-
+  # Download new MOD
   d | D )
-    # Download section
     authcheck
     echo ""
     # Ask user to enter a MOD Steam AppID
