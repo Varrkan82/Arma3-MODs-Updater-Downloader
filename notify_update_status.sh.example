@@ -3,7 +3,7 @@
 GLOBIGNORE="*"
 url=https://discord.com/api/webhooks/.../...
 MSG="$(echo ${1} | cut -c 1-2000 -)"
-post_data(){
+post_data() {
   cat <<EOF
 {
   "username": "Mods Updates",
