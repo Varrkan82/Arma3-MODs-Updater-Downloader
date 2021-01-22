@@ -81,13 +81,13 @@ WORKSHOP_PATH="/home/steam/Steam/steamapps/workshop"
 NOTIFICATION_SCRIPT=$(dirname "${BASH_SOURCE[0]}")/notify_update_status.sh
 
 # Authentication
-if [[ ! -f ../auth.sh ]]; then
+if [[ ! -f $(dirname ${BASH_SOURCE[0]})/../auth.sh ]]; then
 # Optional variables
     STEAM_LOGIN=""                    # Steam login (with a purchased Arma 3)
     STEAM_PASS=""                   # Steam password
   else
     if [[ $- =~ x ]]; then debug=1; set +x; fi
-    source ../auth.sh
+    source "$(dirname "${BASH_SOURCE[0]}")"/../auth.sh
     STEAM_PASS="$(echo ${STEAM_PASS} | base64 -d)"
     [[ $debug == 1 ]] && set -x
 
@@ -414,7 +414,7 @@ fi
 
 # Ask user for action
 echo -ne "After selecting to 'Update' -> 'Single' - you will see the list of installed MODs.\n\033[37;1;41mPlease, copy the needed \"publishedid\" before exiting from the list.\nIt will be unavailabe after exit.\nTo get the list again - you'll need to restart the script\033[0m\n"
-echo -ne "What do you want to do? \n [u|U] - Update MOD \n [c|C] - Check all MODs for updates\n [d|D] - Download MOD?\n"
+echo -ne "What do you want to do? \n [u|U] - Update MOD \n [c|C] - Check all MODs for updates\n [d|D] - Download MOD?\n [q|Q] - Quit\n]"
 echo -ne "Any other selection will cause script to stop.\n"
 
 read -e -p "Make selection please: " ACTION
@@ -535,7 +535,10 @@ case "${ACTION}" in
     fixuppercase
     fixappid
     ;;
-
+  q | Q )
+    echo "Quit"
+    exit 0
+    ;;
   * )
     echo -ne "Wrong selection! Exiting!\n"
     exit 53
