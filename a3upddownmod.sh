@@ -491,8 +491,8 @@ case "${ACTION}" in
 
           get_wkshp_date
 
-          UPDATE_TIME=$(date --date="${WKSHP_UP_ST}" +%s)
-          CREATION_TIME=$(date --date="$(stat ${MODS_PATH} | sed '6q;d' | cut -d" " -f2-)" +%s )   #Fix for MC syntax hilighting #"
+          UPDATE_TIME="${WKSHP_UP_ST}"
+          CREATION_TIME=$(date --date="$(stat ${MODS_PATH} | sed '6q;d' | cut -d" " -f2-3)" +%s )   #Fix for MC syntax hilighting #"
           if [[ ${UPDATE_TIME} -gt ${CREATION_TIME} ]]; then
             MOD_UP_CMD=+"workshop_download_item ${STEAM_APP_ID} ${MOD_ID}"
             echo "${MOD_UP_CMD}"
