@@ -182,9 +182,9 @@ get_mod_id() {
 # Get the MOD's last updated date from Steam Workshop
 get_wkshp_date() {
   if [[ "$(${CURL_CMD} -sN ${URL} | grep -m1 "Update:" | wc -w)" = "7" ]]; then
-    PRINT="$(${CURL_CMD} -sN ${URL} | grep -m1 "Update:" | tr -d "," | awk '{ print $2" "$3" "$4" "$6 }')"
+    PRINT="$(${CURL_CMD} -sN ${URL} | grep -m1 -E -o '<p id=".*">' | awk -F'"' '{ print $2}')"
   else
-    PRINT="$(${CURL_CMD} -sN ${URL} | grep -m1 "Update:" | awk '{ print $2" "$3" "'${CURRYEAR}'" "$5 }')"
+    PRINT="$(${CURL_CMD} -sN ${URL} | grep -m1 -E -o '<p id=".*">' | awk -F'"' '{ print $2}')"
   fi
   WKSHP_UP_ST="${PRINT}"
 }
@@ -243,8 +243,8 @@ checkupdates() {
 
     get_wkshp_date
 
-    UPDATE_TIME=$(date --date="${WKSHP_UP_ST}" +%s)
-    CREATION_TIME=$(date --date="$(stat ${FULL_PATH} | sed '6q;d' | cut -d" " -f2-)" +%s ) 				#Fix for MC syntax hilighting #"
+    UPDATE_TIME="${WKSHP_UP_ST}"
+    CREATION_TIME=$(date --date="$(stat ${FULL_PATH} | sed '6q;d' | cut -d" " -f2-3)" +%s ) 				#Fix for MC syntax hilighting #"
 
     if [[ "${MOD_ID}" = "0" ]]; then
       echo -ne "\033[37;1;41mWrong ID for MOD ${MOD_NAME} in file 'meta.cpp'\033[0m You can update it manually and the next time it will be checked well. \n"
