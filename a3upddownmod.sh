@@ -68,8 +68,7 @@ fi
 ###
 
 # Mandatory variables
-STEAM_APP_ID="107410"                 # AppID of an Arma 3 which is used to download the MODs. Should not be changed usually.
-CURRYEAR=$(date +%Y)                  # Current year
+STEAM_APP_ID="107410"
 CURL_CMD="/usr/bin/curl"               # CURL command
 STEAM_CHANGELOG_URL="https://steamcommunity.com/sharedfiles/filedetails/changelog"    # URL to get the date of the last MOD's update in a WorkShop
 # Change it according to your paths
