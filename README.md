@@ -34,7 +34,7 @@ echo "STEAM_PASS=\"$(echo "YOUR_STEAM_PASSWORD" | base64)\"" >> auth.sh
 
 ## Usage: 
 
-###CLI
+### CLI
 
 Run `./a3upddownmods.sh -h` for CLI usage overview (Check/Update available only for now).
 
@@ -50,7 +50,7 @@ Add the script with needed parameters to you CRON (or to systemd timer job). For
 
 I recommend to automatically check for updates ONLY and to do not use an automatic update as in this case you'll need to update mod's keys in server `keys` folder and to restart server manually anyway.
 
-###Interactive
+### Interactive
 
 Run the script and follow an instructions for interactive usage.
 
