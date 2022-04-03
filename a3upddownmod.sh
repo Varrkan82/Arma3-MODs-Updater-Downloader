@@ -47,7 +47,7 @@ LICENSE
 EXITCODES
 
 # Trap exit codes and remove PID file on exit
-trap cleanup EXIT QUIT ABRT TERM
+trap cleanup EXIT QUIT ABRT SIGTERM
 trap 'exit $?' ERR
 trap 'exit 2' INT
 PID_FILE=/tmp/a3upddownmod.pid
