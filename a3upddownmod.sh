@@ -76,6 +76,7 @@ STEAM_CHANGELOG_URL="https://steamcommunity.com/sharedfiles/filedetails/changelo
 STEAM_CMD_PATH="/home/steam/server/steamcmd/steamcmd.sh"
 # Path to there is Workshop downloaded the MODs
 WORKSHOP_PATH="/home/steam/Steam/steamapps/workshop"
+STEAM_FORCE_INSTALL_DIR="/home/steam/Steam"
 # Notification script
 NOTIFICATION_SCRIPT=$(dirname "${BASH_SOURCE[0]}")/notify_update_status.sh
 
@@ -95,10 +96,10 @@ fi
 # Check for needed paths and for CURL
 if [[ ! -f "${STEAM_CMD_PATH}" || ! -d "${WORKSHOP_PATH}" ]]; then
   echo "Some path(s) is/(are) missing. Check - does an all paths are correctly setted up! Exit."
-  return 51
+  exit 51
 elif [[ ! -f "${CURL_CMD}" ]]; then
   echo "CURL is missing. Check - does it installed and pass the correct path to it into variable 'CURL_CMD'. Exit."
-  return 51
+  exit 51
 fi
 
 ## Functions
@@ -273,7 +274,7 @@ checkupdates() {
 # Download MOD by its ID
 download_mod() {
   if [[ $- =~ x ]]; then debug=1; set +x; fi
-  until "${STEAM_CMD_PATH}" +login "${STEAM_LOGIN}" "${STEAM_PASS}" "${MOD_UP_CMD}" validate +quit; do
+  until "${STEAM_CMD_PATH}" +force_install_dir "${STEAM_FORCE_INSTALL_DIR}" +login "${STEAM_LOGIN}" "${STEAM_PASS}" "${MOD_UP_CMD}" validate +quit; do
     echo -n "\nRetrying after error while downloading.\n"
     sleep 3
   done
