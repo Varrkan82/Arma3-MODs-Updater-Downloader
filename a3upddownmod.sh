@@ -69,14 +69,16 @@ fi
 
 # Mandatory variables
 STEAM_APP_ID="107410"
-CURL_CMD="/usr/bin/curl"               # CURL command
+CURL_CMD="$(which curl)"               # curl command
+RENAME_CMD="$(which rename)"               # rename command
+
 STEAM_CHANGELOG_URL="https://steamcommunity.com/sharedfiles/filedetails/changelog"    # URL to get the date of the last MOD's update in a WorkShop
 # Change it according to your paths
 # Path to 'steamcmd' executable file
-STEAM_CMD_PATH="/home/steam/server/steamcmd/steamcmd.sh"
+STEAM_CMD_PATH="${STEAM_CMD_PATH:-/home/steam/server/steamcmd/steamcmd.sh}"
 # Path to there is Workshop downloaded the MODs
-WORKSHOP_PATH="/home/steam/Steam/steamapps/workshop"
-STEAM_FORCE_INSTALL_DIR="/home/steam/Steam"
+WORKSHOP_PATH="${WORKSHOP_PATH:-/home/steam/Steam/steamapps/workshop}"
+STEAM_FORCE_INSTALL_DIR="${STEAM_FORCE_INSTALL_DIR:-/home/steam/Steam}"
 # Notification script
 NOTIFICATION_SCRIPT=$(dirname "${BASH_SOURCE[0]}")/notify_update_status.sh
 
@@ -97,7 +99,12 @@ fi
 if [[ ! -f "${STEAM_CMD_PATH}" || ! -d "${WORKSHOP_PATH}" ]]; then
   echo "Some path(s) is/(are) missing. Check - does an all paths are correctly setted up! Exit."
   exit 51
-elif [[ ! -f "${CURL_CMD}" ]]; then
+fi
+if [[ ! -f "${CURL_CMD}" ]]; then
+  echo "CURL is missing. Check - does it installed and pass the correct path to it into variable 'CURL_CMD'. Exit."
+  exit 51
+fi
+if [[ ! -f "${RENAME_CMD}" ]]; then
   echo "CURL is missing. Check - does it installed and pass the correct path to it into variable 'CURL_CMD'. Exit."
   exit 51
 fi
@@ -204,7 +211,7 @@ countdown() {
 # Fix case
 fixuppercase() {
     FULL_PATH="${WORKSHOP_PATH}/content/${STEAM_APP_ID}/${MOD_ID}"
-    find "${FULL_PATH}" -depth -exec rename 's/(.*)\/([^\/]*)/$1\/\L$2/' {} \;
+    find "${FULL_PATH}" -depth -exec ${RENAME_CMD} 's/(.*)\/([^\/]*)/$1\/\L$2/' {} \;
     if [[ "$?" = "0" ]]; then
       echo -en "Fixed upper case for MOD ${MOD_NAME}\n"
     fi
