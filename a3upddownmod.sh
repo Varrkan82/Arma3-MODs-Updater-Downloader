@@ -101,11 +101,11 @@ if [[ ! -f "${STEAM_CMD_PATH}" || ! -d "${WORKSHOP_PATH}" ]]; then
   exit 51
 fi
 if [[ ! -f "${CURL_CMD}" ]]; then
-  echo "CURL is missing. Check - does it installed and pass the correct path to it into variable 'CURL_CMD'. Exit."
+  echo "CURL is missing. Check - does it installed and instal it if not. Exit."
   exit 51
 fi
 if [[ ! -f "${RENAME_CMD}" ]]; then
-  echo "CURL is missing. Check - does it installed and pass the correct path to it into variable 'CURL_CMD'. Exit."
+  echo "'rename' is missing. Check - does it installed and install it if not. Exit."
   exit 51
 fi
 
